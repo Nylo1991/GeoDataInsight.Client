@@ -34,6 +34,13 @@ namespace GeoDataInsight.Client.ViewModels
             set { _statusMensagem = value; OnPropertyChanged(); }
         }
 
+        private string _mapImageUrl;
+        public string MapImageUrl
+        {
+            get => _mapImageUrl;
+            set { _mapImageUrl = value; OnPropertyChanged(); }
+        }
+
         public ICommand BuscarCommand { get; }
 
         public MainViewModel()
@@ -51,6 +58,15 @@ namespace GeoDataInsight.Client.ViewModels
             if (resultado != null)
             {
                 ResultadoAtual = resultado;
+
+               
+               
+                string latStr = resultado.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                string lonStr = resultado.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+               
+                MapImageUrl = $"https://staticmap.openstreetmap.de/staticmap.php?center={latStr},{lonStr}&zoom=15&size=400x300&markers={latStr},{lonStr},red-pushpin";
+              
                 StatusMensagem = "Local encontrado! Salvando no banco...";
 
                 await _firebaseService.SalvarNoHistoricoAsync(resultado);

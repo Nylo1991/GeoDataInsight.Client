@@ -15,22 +15,33 @@
         </StackPanel>
 
         <GroupBox Header="Informações Geográficas" Grid.Row="1" Padding="10">
-            <StackPanel>
-                <TextBlock Text="Nome:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding ResultadoAtual.Nome}" Margin="0,0,0,5" TextWrapping="Wrap"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Bairro:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding ResultadoAtual.Bairro}" Margin="0,0,0,5"/>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Nome:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Nome}" Margin="0,0,0,5" TextWrapping="Wrap"/>
 
-                <TextBlock Text="CEP:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding ResultadoAtual.Cep}" Margin="0,0,0,5"/>
+                    <TextBlock Text="Bairro:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Bairro}" Margin="0,0,0,5"/>
 
-                <TextBlock Text="Latitude:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding ResultadoAtual.Latitude}" Margin="0,0,0,5"/>
+                    <TextBlock Text="CEP:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Cep}" Margin="0,0,0,5"/>
 
-                <TextBlock Text="Longitude:" FontWeight="Bold"/>
-                <TextBlock Text="{Binding ResultadoAtual.Longitude}" Margin="0,0,0,10"/>
-            </StackPanel>
+                    <TextBlock Text="Latitude:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Latitude}" Margin="0,0,0,5"/>
+
+                    <TextBlock Text="Longitude:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Longitude}" Margin="0,0,0,10"/>
+                </StackPanel>
+
+                <Border Grid.Column="1" BorderBrush="#DDDDDD" BorderThickness="1" Background="#EEEEEE" Margin="10,0,0,0">
+                    <Image Source="{Binding MapImageUrl}" Stretch="Uniform" ToolTip="Mapa gerado pelo OpenStreetMap"/>
+                </Border>
+            </Grid>
         </GroupBox>
 
         <StatusBar Grid.Row="2" Background="#F0F0F0">
