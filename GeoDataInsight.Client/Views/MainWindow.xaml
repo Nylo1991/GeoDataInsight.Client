@@ -1,0 +1,40 @@
+﻿<Window x:Class="GeoDataInsight.Client.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="GeoData Insight - Squad 1" Height="450" Width="800">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBox Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}" Width="400" Height="30" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+            <Button Command="{Binding BuscarCommand}" Content="Buscar Local" Width="100" Height="30" Background="#2196F3" Foreground="White"/>
+        </StackPanel>
+
+        <GroupBox Header="Informações Geográficas" Grid.Row="1" Padding="10">
+            <StackPanel>
+                <TextBlock Text="Nome:" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ResultadoAtual.Nome}" Margin="0,0,0,5" TextWrapping="Wrap"/>
+
+                <TextBlock Text="Bairro:" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ResultadoAtual.Bairro}" Margin="0,0,0,5"/>
+
+                <TextBlock Text="CEP:" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ResultadoAtual.Cep}" Margin="0,0,0,5"/>
+
+                <TextBlock Text="Latitude:" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ResultadoAtual.Latitude}" Margin="0,0,0,5"/>
+
+                <TextBlock Text="Longitude:" FontWeight="Bold"/>
+                <TextBlock Text="{Binding ResultadoAtual.Longitude}" Margin="0,0,0,10"/>
+            </StackPanel>
+        </GroupBox>
+
+        <StatusBar Grid.Row="2" Background="#F0F0F0">
+            <TextBlock Text="{Binding StatusMensagem}" Foreground="DimGray" FontWeight="Bold"/>
+        </StatusBar>
+    </Grid>
+</Window>
