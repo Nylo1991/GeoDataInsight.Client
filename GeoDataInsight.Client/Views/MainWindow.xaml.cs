@@ -10,17 +10,18 @@ namespace GeoDataInsight.Client.Views
 {
     public partial class MainWindow : Window
     {
-        private MainViewModel _viewModel;
-        private MapService _mapService;
-        private FirebaseService _firebaseService;
+        private readonly MainViewModel _viewModel;
+        private readonly MapService _mapService;
 
         public MainWindow()
         {
             InitializeComponent();
+
             _viewModel = new MainViewModel();
             _mapService = new MapService();
-            _firebaseService = new FirebaseService();
+
             this.DataContext = _viewModel;
+
             InitializeMap();
         }
 
@@ -33,39 +34,32 @@ namespace GeoDataInsight.Client.Views
 
         private async void btnBuscar_Click(object sender, RoutedEventArgs e)
         {
-            string termo = txtBusca.Text;
-            if (string.IsNullOrWhiteSpace(termo)) return;
+            if (string.IsNullOrWhiteSpace(_viewModel.TermoBusca)) return;
 
             try
             {
-                btnBuscar.IsEnabled = false;
                 _viewModel.StatusMensagem = "Buscando...";
+                btnBuscar.IsEnabled = false;
 
-                var resultados = await _mapService.SearchLocationAsync(termo);
+                var resultados = await _mapService.SearchLocationAsync(_viewModel.TermoBusca);
+
                 _viewModel.Resultados.Clear();
-
                 foreach (var local in resultados)
                 {
                     _viewModel.Resultados.Add(local);
                 }
-                _viewModel.StatusMensagem = "Pronto";
+
+                _viewModel.StatusMensagem = resultados.Count > 0 ? "Busca concluída" : "Nenhum local encontrado";
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show("Erro ao buscar: " + ex.Message);
+                MessageBox.Show($"Erro na busca: {ex.Message}");
+                _viewModel.StatusMensagem = "Erro na operação";
             }
-            finally { btnBuscar.IsEnabled = true; }
-        }
-
-        private async void btnSalvarFirebase_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.Selecionado == null) return;
-            try
+            finally
             {
-                await _firebaseService.SalvarNoHistoricoAsync(_viewModel.Selecionado);
-                MessageBox.Show("Salvo com sucesso!");
+                btnBuscar.IsEnabled = true;
             }
-            catch (System.Exception ex) { MessageBox.Show("Erro: " + ex.Message); }
         }
 
         private void lstResultados_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -74,10 +68,27 @@ namespace GeoDataInsight.Client.Views
             {
                 var lon = _viewModel.Selecionado.Longitude;
                 var lat = _viewModel.Selecionado.Latitude;
+
+                // Converte coordenadas para o formato do Mapsui (Spherical Mercator)
                 var (x, y) = SphericalMercator.FromLonLat(lon, lat);
-                mapControl.Map.Navigator.CenterOn(new Mapsui.MPoint(x, y));
-                mapControl.Map.Navigator.ZoomTo(2);
+
+                // CORREÇÃO CS1061: Forma correta de centralizar e dar zoom nas versões atuais do Mapsui
+                mapControl.Map?.Navigator.CenterOnAndZoomTo(new Mapsui.MPoint(x, y), 2);
+
+                _viewModel.StatusMensagem = $"Localizado: {_viewModel.Selecionado.Logradouro}";
             }
+        }
+
+        private void btnSalvarFirebase_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.Selecionado == null)
+            {
+                MessageBox.Show("Selecione um local na lista primeiro.");
+                return;
+            }
+
+            // Lógica de salvar será implementada após a limpeza total
+            MessageBox.Show($"Pronto para salvar o ID: {_viewModel.Selecionado.Id} no Firebase.");
         }
     }
 }
