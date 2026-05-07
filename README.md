@@ -13,3 +13,23 @@ Esta aplicação é responsável por:
 - Exibir os resultados em uma interface visual com mapa interativo
 - Permitir que o usuário selecione e salve locais no histórico em nuvem (Firebase)
 - Integrar-se com o backend do **Squad 2** para persistência central dos dados
+
+- ---
+ 
+##  Arquitetura do Sistema
+ 
+```
+┌─────────────────────────────────────────────────────────┐
+│                     GeoData Insight                     │
+│                                                         │
+│  [Squad 1 - WPF Client] ──► [Squad 2 - API Backend]    │
+│         │                          │                    │
+│         │                   [Firebase DB]               │
+│         │                          │                    │
+│         └──────────────► [Squad 3 - Análise Geográfica] │
+└─────────────────────────────────────────────────────────┘
+```
+ 
+O **Squad 1** é o ponto de entrada do usuário: realiza a busca, exibe os dados e os envia para o backend.
+ 
+---
