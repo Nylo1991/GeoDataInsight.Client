@@ -1,10 +1,11 @@
-﻿using System;
+﻿using BruTile.Wms;
+using GeoDataInsight.Client.Services;
+using GeoDataInsight.Client.ViewModels;
+using Mapsui.Projections;
+using Mapsui.Tiling;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using GeoDataInsight.Client.ViewModels;
-using GeoDataInsight.Client.Services;
-using Mapsui.Tiling;
-using Mapsui.Projections;
 
 namespace GeoDataInsight.Client.Views
 {
@@ -110,7 +111,7 @@ namespace GeoDataInsight.Client.Views
                 var point = new Mapsui.MPoint(x, y);
 
                 mapControl.Map.Navigator.CenterOn(point);
-                mapControl.Map.Navigator.ZoomTo(2); // Nível de zoom Mapsui
+                mapControl.Map.Navigator.ZoomTo(2); git add .
             }
         }
     }

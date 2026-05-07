@@ -10,32 +10,27 @@ namespace GeoDataInsight.Client.Services
 {
     public class MapService
     {
-        private readonly HttpClient _client;
+        private readonly HttpClient _httpClient = new HttpClient();
 
         public MapService()
         {
-            _client = new HttpClient();
-            // User-Agent obrigatório para o OpenStreetMap
-            _client.DefaultRequestHeaders.Add("User-Agent", "GeoDataInsight-Squad1");
+            if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "GeoDataInsight-App");
         }
 
         public async Task<List<LocationModel>> SearchLocationAsync(string query)
         {
             try
             {
-                // Buscamos com addressdetails=1 para pegar os campos separados (rua, bairro, etc)
                 string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}&format=json&addressdetails=1&limit=5";
-
-                var response = await _client.GetStringAsync(url);
+                var response = await _httpClient.GetStringAsync(url);
                 var results = JsonConvert.DeserializeObject<List<OsmResult>>(response);
-
                 var listaFinal = new List<LocationModel>();
 
                 foreach (var item in results)
                 {
                     listaFinal.Add(new LocationModel
                     {
-                        // Mapeando os atributos específicos que você pediu
                         Logradouro = item.address?.road ?? item.display_name,
                         Numero = item.address?.house_number ?? "S/N",
                         Bairro = item.address?.suburb ?? item.address?.neighbourhood ?? "N/A",
@@ -43,20 +38,13 @@ namespace GeoDataInsight.Client.Services
                         Latitude = double.Parse(item.lat, CultureInfo.InvariantCulture),
                         Longitude = double.Parse(item.lon, CultureInfo.InvariantCulture),
                         Timestamp = DateTime.Now
-                    }
-                    // Adicionamos uma propriedade extra apenas para exibir na lista (opcional)
-                    );
+                    });
                 }
-
                 return listaFinal;
             }
-            catch
-            {
-                return new List<LocationModel>();
-            }
+            catch { return new List<LocationModel>(); }
         }
 
-        // Classes auxiliares para o JSON complexo do OSM
         private class OsmResult
         {
             public string display_name { get; set; }
