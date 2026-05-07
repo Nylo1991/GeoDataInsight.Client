@@ -144,7 +144,7 @@ private readonly string FireBaseUrl = "https://SEU-PROJETO-default-rtdb.firebase
  
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/GeoDataInsight-Client.git
+git clone https://github.com/vncsqxy/GeoDataInsight.Client.git
  
 # 2. Abra o projeto no Visual Studio
 # Abra o arquivo GeoDataInsight.Client.csproj
