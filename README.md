@@ -159,3 +159,15 @@ dotnet run
 ```
  
 ---
+
+## 📦 Dependências (NuGet)
+ 
+```xml
+<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+<PackageReference Include="FirebaseDatabase.net" Version="5.0.0" />
+<PackageReference Include="Mapsui.Wpf" Version="5.0.2" />
+<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+<PackageReference Include="RestSharp" Version="114.0.0" />
+```
+ 
+---
