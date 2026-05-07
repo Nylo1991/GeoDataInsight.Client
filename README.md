@@ -118,3 +118,18 @@ GeoDataInsight.Client/
 >  A API Nominatim exige um `User-Agent` identificado no cabeçalho HTTP. O projeto já configura isso automaticamente como `"GeoDataInsight-App"`.
  
 ---
+
+## ☁️ Configuração do Firebase
+ 
+1. Acesse [https://console.firebase.google.com](https://console.firebase.google.com)
+2. Crie um projeto chamado `geosquadexplorer` (ou outro nome)
+3. Ative o **Realtime Database**
+4. Copie a URL do banco (ex: `https://seu-projeto-default-rtdb.firebaseio.com/`)
+5. No arquivo `Services/FirebaseService.cs`, substitua a URL:
+```csharp
+private readonly string FireBaseUrl = "https://SEU-PROJETO-default-rtdb.firebaseio.com/";
+```
+ 
+> O projeto já está pré-configurado com a URL `geosquadexplorer-default-rtdb.firebaseio.com`.
+ 
+---
