@@ -133,3 +133,29 @@ private readonly string FireBaseUrl = "https://SEU-PROJETO-default-rtdb.firebase
 > O projeto já está pré-configurado com a URL `geosquadexplorer-default-rtdb.firebaseio.com`.
  
 ---
+
+## 🚀 Como Executar
+ 
+### Pré-requisitos
+- Visual Studio 2022 ou superior
+- .NET 8.0 SDK instalado
+- Conexão com a internet (para API de mapas e Firebase)
+### Passo a Passo
+ 
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/GeoDataInsight-Client.git
+ 
+# 2. Abra o projeto no Visual Studio
+# Abra o arquivo GeoDataInsight.Client.csproj
+ 
+# 3. Restaure os pacotes NuGet
+# O Visual Studio faz isso automaticamente, ou via terminal:
+dotnet restore
+ 
+# 4. Execute o projeto
+dotnet run
+# ou pressione F5 no Visual Studio
+```
+ 
+---
