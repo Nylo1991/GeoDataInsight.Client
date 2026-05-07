@@ -49,3 +49,30 @@ O **Squad 1** é o ponto de entrada do usuário: realiza a busca, exibe os dados
 | CommunityToolkit.Mvvm | 8.4.2 | Padrão MVVM (INotifyPropertyChanged) |
  
 ---
+
+## 📁 Estrutura do Projeto
+ 
+```
+GeoDataInsight.Client/
+│
+├── Models/
+│   ├── LocationModel.cs       # Modelo de dados de uma localização
+│   └── RelayCommand.cs        # Implementação de ICommand para MVVM
+│
+├── Services/
+│   ├── MapService.cs          # Consumo da API Nominatim (OpenStreetMap)
+│   └── FirebaseService.cs     # Integração com Firebase Realtime Database
+│
+├── ViewModels/
+│   └── MainViewModel.cs       # ViewModel principal (padrão MVVM)
+│
+├── Views/
+│   ├── MainWindow.xaml        # Interface gráfica principal
+│   └── MainWindow.xaml.cs     # Code-behind da janela principal
+│
+├── App.xaml                   # Configuração da aplicação WPF
+├── App.xaml.cs                # Entry point da aplicação
+└── GeoDataInsight.Client.csproj  # Arquivo de projeto .NET
+```
+ 
+---
