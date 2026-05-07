@@ -171,3 +171,26 @@ dotnet run
 ```
  
 ---
+
+## 🤝 Integração com o Squad 2 (Backend)
+ 
+O Squad 1 envia os dados do local selecionado para a **API REST do Squad 2** via HTTP POST.
+ 
+> 🔧 A integração com o endpoint do Squad 2 está preparada na camada de serviços e será conectada assim que a URL da API do backend estiver disponível.
+ 
+**Dados enviados (LocationModel):**
+ 
+```json
+{
+  "id": 1,
+  "logradouro": "Avenida Paulista",
+  "numero": "1578",
+  "bairro": "Bela Vista",
+  "cep": "01310-200",
+  "latitude": -23.5614,
+  "longitude": -46.6558,
+  "timestamp": "2026-05-07T14:30:00"
+}
+```
+ 
+---
