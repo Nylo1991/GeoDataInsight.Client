@@ -98,3 +98,23 @@ GeoDataInsight.Client/
 - Botão de busca desabilitado durante o carregamento
 ### ✅ Feedback Visual
 - Barra de status com mensagens em tempo real (`"Buscando..."`, `"Busca concluída"`, `"Erro na operação"`)
+
+- ---
+ 
+## API Utilizada
+ 
+### Nominatim — OpenStreetMap
+ 
+- **URL base:** `https://nominatim.openstreetmap.org/search`
+- **Gratuita** e sem necessidade de chave de API
+- **Parâmetros usados:**
+| Parâmetro | Valor | Descrição |
+|---|---|---|
+| `q` | texto da busca | Endereço ou local pesquisado |
+| `format` | `json` | Formato de retorno |
+| `addressdetails` | `1` | Retorna campos separados (rua, bairro, etc.) |
+| `limit` | `5` | Número máximo de resultados |
+ 
+>  A API Nominatim exige um `User-Agent` identificado no cabeçalho HTTP. O projeto já configura isso automaticamente como `"GeoDataInsight-App"`.
+ 
+---
