@@ -1,51 +1,77 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using GeoDataInsight.Client.Models;
+using System.Globalization;
 
 namespace GeoDataInsight.Client.Services
 {
     public class MapService
     {
-        private readonly HttpClient _httpClient;
+        private readonly HttpClient _client;
 
         public MapService()
         {
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "GeoDataInsight-Squad1");
+            _client = new HttpClient();
+            // User-Agent obrigatório para o OpenStreetMap
+            _client.DefaultRequestHeaders.Add("User-Agent", "GeoDataInsight-Squad1");
         }
 
-        public async Task<LocationModel> BuscarLocalAsync(string busca)
+        public async Task<List<LocationModel>> SearchLocationAsync(string query)
         {
             try
             {
-                string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(busca)}&format=json&addressdetails=1&limit=1";
-                var response = await _httpClient.GetStringAsync(url);
-                var jsonArray = JArray.Parse(response);
+                // Buscamos com addressdetails=1 para pegar os campos separados (rua, bairro, etc)
+                string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}&format=json&addressdetails=1&limit=5";
 
-                if (jsonArray.Count > 0)
+                var response = await _client.GetStringAsync(url);
+                var results = JsonConvert.DeserializeObject<List<OsmResult>>(response);
+
+                var listaFinal = new List<LocationModel>();
+
+                foreach (var item in results)
                 {
-                    var resultado = jsonArray[0];
-                    var address = resultado["address"];
-
-                    return new LocationModel
+                    listaFinal.Add(new LocationModel
                     {
-                        Logradouro = address?["road"]?.ToString() ?? resultado["name"]?.ToString() ?? "Desconhecido",
-                        Numero = address?["house_number"]?.ToString() ?? "S/N",
-                        Bairro = address?["suburb"]?.ToString() ?? address?["neighbourhood"]?.ToString() ?? "N/A",
-                        Cep = address?["postcode"]?.ToString() ?? "N/A",
-                        Latitude = double.Parse(resultado["lat"].ToString(), System.Globalization.CultureInfo.InvariantCulture),
-                        Longitude = double.Parse(resultado["lon"].ToString(), System.Globalization.CultureInfo.InvariantCulture),
+                        // Mapeando os atributos específicos que você pediu
+                        Logradouro = item.address?.road ?? item.display_name,
+                        Numero = item.address?.house_number ?? "S/N",
+                        Bairro = item.address?.suburb ?? item.address?.neighbourhood ?? "N/A",
+                        Cep = item.address?.postcode ?? "N/A",
+                        Latitude = double.Parse(item.lat, CultureInfo.InvariantCulture),
+                        Longitude = double.Parse(item.lon, CultureInfo.InvariantCulture),
                         Timestamp = DateTime.Now
-                    };
+                    }
+                    // Adicionamos uma propriedade extra apenas para exibir na lista (opcional)
+                    );
                 }
-                return null;
+
+                return listaFinal;
             }
             catch
             {
-                return null;
+                return new List<LocationModel>();
             }
+        }
+
+        // Classes auxiliares para o JSON complexo do OSM
+        private class OsmResult
+        {
+            public string display_name { get; set; }
+            public string lat { get; set; }
+            public string lon { get; set; }
+            public OsmAddress address { get; set; }
+        }
+
+        private class OsmAddress
+        {
+            public string road { get; set; }
+            public string house_number { get; set; }
+            public string suburb { get; set; }
+            public string neighbourhood { get; set; }
+            public string postcode { get; set; }
         }
     }
 }
