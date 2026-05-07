@@ -31,7 +31,8 @@ namespace GeoDataInsight.Client.Services
 
                     return new LocationModel
                     {
-                        Nome = resultado["display_name"]?.ToString() ?? "Desconhecido",
+                        Logradouro = address?["road"]?.ToString() ?? resultado["name"]?.ToString() ?? "Desconhecido",
+                        Numero = address?["house_number"]?.ToString() ?? "S/N",
                         Bairro = address?["suburb"]?.ToString() ?? address?["neighbourhood"]?.ToString() ?? "N/A",
                         Cep = address?["postcode"]?.ToString() ?? "N/A",
                         Latitude = double.Parse(resultado["lat"].ToString(), System.Globalization.CultureInfo.InvariantCulture),

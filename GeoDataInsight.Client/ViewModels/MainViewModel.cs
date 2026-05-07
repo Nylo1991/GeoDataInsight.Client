@@ -1,53 +1,85 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
+using System.Windows.Input;
 using GeoDataInsight.Client.Models;
+using GeoDataInsight.Client.Services;
+using GeoDataInsight.Client.Helpers;
 
-namespace GeoDataInsight.Client.Services
+namespace GeoDataInsight.Client.ViewModels
 {
-    public class MapService
+    public class MainViewModel : INotifyPropertyChanged
     {
-        private readonly HttpClient _httpClient;
+        private readonly MapService _mapService = new MapService();
+        private readonly FirebaseService _firebaseService = new FirebaseService();
 
-        public MapService()
+        private string _termoBusca;
+        public string TermoBusca
         {
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "GeoDataInsight-Squad1");
+            get => _termoBusca;
+            set { _termoBusca = value; OnPropertyChanged(); }
         }
 
-        public async Task<LocationModel> BuscarLocalAsync(string busca)
+        private LocationModel _resultadoAtual;
+        public LocationModel ResultadoAtual
         {
-            try
-            {
-                string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(busca)}&format=json&addressdetails=1&limit=1";
-                var response = await _httpClient.GetStringAsync(url);
-                var jsonArray = JArray.Parse(response);
+            get => _resultadoAtual;
+            set { _resultadoAtual = value; OnPropertyChanged(); }
+        }
 
-                if (jsonArray.Count > 0)
-                {
-                    var resultado = jsonArray[0];
-                    var address = resultado["address"];
+        private string _statusMensagem = "Pronto";
+        public string StatusMensagem
+        {
+            get => _statusMensagem;
+            set { _statusMensagem = value; OnPropertyChanged(); }
+        }
 
-                    return new LocationModel
-                    {
-                        // O ID como int geralmente é gerado pelo banco de dados ou deixado como 0. 
-                        // O Firebase vai criar uma chave única automaticamente por fora de qualquer forma.
-                        Logradouro = address?["road"]?.ToString() ?? resultado["name"]?.ToString() ?? "Desconhecido",
-                        Numero = address?["house_number"]?.ToString() ?? "S/N",
-                        Bairro = address?["suburb"]?.ToString() ?? address?["neighbourhood"]?.ToString() ?? "N/A",
-                        Cep = address?["postcode"]?.ToString() ?? "N/A",
-                        Latitude = double.Parse(resultado["lat"].ToString(), System.Globalization.CultureInfo.InvariantCulture),
-                        Longitude = double.Parse(resultado["lon"].ToString(), System.Globalization.CultureInfo.InvariantCulture),
-                        Timestamp = DateTime.Now
-                    };
-                }
-                return null;
-            }
-            catch
+        private string _mapImageUrl;
+        public string MapImageUrl
+        {
+            get => _mapImageUrl;
+            set { _mapImageUrl = value; OnPropertyChanged(); }
+        }
+
+        public ICommand BuscarCommand { get; }
+
+        public MainViewModel()
+        {
+            BuscarCommand = new RelayCommand(async (param) => await BuscarLocal());
+        }
+
+        private async Task BuscarLocal()
+        {
+            if (string.IsNullOrWhiteSpace(TermoBusca)) return;
+
+            StatusMensagem = "Buscando...";
+            var resultado = await _mapService.BuscarLocalAsync(TermoBusca);
+
+            if (resultado != null)
             {
-                return null;
+                ResultadoAtual = resultado;
+
+                string latStr = resultado.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                string lonStr = resultado.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+                MapImageUrl = $"https://staticmap.openstreetmap.de/staticmap.php?center={latStr},{lonStr}&zoom=15&size=400x300&markers={latStr},{lonStr},red-pushpin";
+
+                StatusMensagem = "Local encontrado! Salvando no banco...";
+
+                await _firebaseService.SalvarNoHistoricoAsync(resultado);
+
+                StatusMensagem = "Local salvo com sucesso no Firebase!";
             }
+            else
+            {
+                StatusMensagem = "Local não encontrado ou erro na API.";
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }
