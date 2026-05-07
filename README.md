@@ -33,3 +33,19 @@ Esta aplicação é responsável por:
 O **Squad 1** é o ponto de entrada do usuário: realiza a busca, exibe os dados e os envia para o backend.
  
 ---
+
+## Tecnologias Utilizadas
+ 
+| Tecnologia | Versão | Finalidade |
+|---|---|---|
+| .NET | 8.0 | Plataforma base |
+| WPF (Windows Presentation Foundation) | — | Interface gráfica desktop |
+| OpenStreetMap (Nominatim API) | — | Busca de localizações gratuita |
+| Mapsui.Wpf | 5.0.2 | Renderização do mapa interativo |
+| Firebase Realtime Database | — | Persistência do histórico em nuvem |
+| FirebaseDatabase.net | 5.0.0 | SDK do Firebase para .NET |
+| Newtonsoft.Json | 13.0.4 | Deserialização do JSON da API |
+| RestSharp | 114.0.0 | Cliente HTTP |
+| CommunityToolkit.Mvvm | 8.4.2 | Padrão MVVM (INotifyPropertyChanged) |
+ 
+---
