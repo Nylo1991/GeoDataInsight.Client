@@ -76,3 +76,25 @@ GeoDataInsight.Client/
 ```
  
 ---
+
+## ⚙️ Funcionalidades Implementadas
+ 
+### ✅ Busca de Localização
+- Campo de texto para digitação do local (cidade, endereço, coordenadas)
+- Botão de busca que consome a API **Nominatim** do OpenStreetMap
+- Retorna até **5 resultados** por consulta
+- Extrai automaticamente: logradouro, número, bairro, CEP, latitude e longitude
+### ✅ Exibição de Resultados
+- Lista com os locais encontrados
+- Painel de detalhes com todos os campos do local selecionado
+- Mapa interativo (via **Mapsui**) que centraliza automaticamente no local selecionado ao clicar na lista
+### ✅ Histórico em Nuvem (Firebase)
+- Botão para salvar o local selecionado no **Firebase Realtime Database**
+- Os dados ficam armazenados no nó `HistoricoBuscas` do banco
+### ✅ Tratamento de Erros
+- API fora do ar → retorna lista vazia sem travar a aplicação
+- Campo de busca vazio → bloqueio antes de fazer a requisição
+- Erros de rede → mensagem exibida via `MessageBox`
+- Botão de busca desabilitado durante o carregamento
+### ✅ Feedback Visual
+- Barra de status com mensagens em tempo real (`"Buscando..."`, `"Busca concluída"`, `"Erro na operação"`)
