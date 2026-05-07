@@ -1,7 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using GeoDataInsight.Client.Models;
+using GeoDataInsight.Client.Helpers; // Necessário para o RelayCommand
 
 namespace GeoDataInsight.Client.ViewModels
 {
@@ -10,6 +12,7 @@ namespace GeoDataInsight.Client.ViewModels
         private string _termoBusca = string.Empty;
         private string _statusMensagem = "Pronto";
         private LocationModel? _selecionado;
+        private bool _isPanelVisible;
 
         public string TermoBusca
         {
@@ -23,17 +26,42 @@ namespace GeoDataInsight.Client.ViewModels
             set { _statusMensagem = value; OnPropertyChanged(); }
         }
 
-        // Lista que o MapService vai preencher
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
-
-        // O item que o usuário seleciona na lista para ver os detalhes
         public LocationModel? Selecionado
         {
             get => _selecionado;
             set { _selecionado = value; OnPropertyChanged(); }
         }
 
+        public bool IsPanelVisible
+        {
+            get => _isPanelVisible;
+            set { _isPanelVisible = value; OnPropertyChanged(); }
+        }
+        public ICommand MarkerClickCommand { get; }
+        public ICommand SalvarCommand { get; }
+
+        public MainViewModel()
+        {
+            IsPanelVisible = false;
+
+            MarkerClickCommand = new RelayCommand(p => {
+                if (p is LocationModel loc)
+                {
+                    Selecionado = loc;
+                    IsPanelVisible = true;
+                }
+            });
+
+            SalvarCommand = new RelayCommand(p => {
+
+                StatusMensagem = "Localização salva no histórico com sucesso!";
+                IsPanelVisible = false; 
+            });
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
+
         protected void OnPropertyChanged([CallerMemberName] string name = null!)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
