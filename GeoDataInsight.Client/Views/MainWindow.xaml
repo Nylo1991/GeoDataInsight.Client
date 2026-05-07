@@ -22,8 +22,11 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Nome:" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding ResultadoAtual.Nome}" Margin="0,0,0,5" TextWrapping="Wrap"/>
+                    <TextBlock Text="Logradouro:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Logradouro}" Margin="0,0,0,5" TextWrapping="Wrap"/>
+
+                    <TextBlock Text="Número:" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ResultadoAtual.Numero}" Margin="0,0,0,5"/>
 
                     <TextBlock Text="Bairro:" FontWeight="Bold"/>
                     <TextBlock Text="{Binding ResultadoAtual.Bairro}" Margin="0,0,0,5"/>
