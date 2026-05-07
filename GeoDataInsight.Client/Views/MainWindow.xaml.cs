@@ -1,11 +1,10 @@
-﻿using BruTile.Wms;
-using GeoDataInsight.Client.Services;
-using GeoDataInsight.Client.ViewModels;
-using Mapsui.Projections;
-using Mapsui.Tiling;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using GeoDataInsight.Client.ViewModels;
+using GeoDataInsight.Client.Services;
+using Mapsui.Tiling;
+using Mapsui.Projections;
 
 namespace GeoDataInsight.Client.Views
 {
@@ -18,16 +17,10 @@ namespace GeoDataInsight.Client.Views
         public MainWindow()
         {
             InitializeComponent();
-
-            // Inicializa as classes de serviço
             _viewModel = new MainViewModel();
             _mapService = new MapService();
             _firebaseService = new FirebaseService();
-
-            // Conecta a tela aos dados
             this.DataContext = _viewModel;
-
-            // Inicia o mapa interativo
             InitializeMap();
         }
 
@@ -46,72 +39,44 @@ namespace GeoDataInsight.Client.Views
             try
             {
                 btnBuscar.IsEnabled = false;
-                txtStatus.Text = "Buscando...";
+                _viewModel.StatusMensagem = "Buscando...";
 
                 var resultados = await _mapService.SearchLocationAsync(termo);
-
                 _viewModel.Resultados.Clear();
+
                 foreach (var local in resultados)
                 {
                     _viewModel.Resultados.Add(local);
                 }
-
-                txtStatus.Text = resultados.Count > 0 ? "Pronto" : "Nenhum local encontrado.";
+                _viewModel.StatusMensagem = "Pronto";
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                MessageBox.Show("Erro ao buscar: " + ex.Message, "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
-                txtStatus.Text = "Erro na busca.";
+                MessageBox.Show("Erro ao buscar: " + ex.Message);
             }
-            finally
-            {
-                btnBuscar.IsEnabled = true;
-            }
+            finally { btnBuscar.IsEnabled = true; }
         }
 
         private async void btnSalvarFirebase_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.Selecionado == null)
-            {
-                MessageBox.Show("Selecione um local na lista antes de salvar!", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
+            if (_viewModel.Selecionado == null) return;
             try
             {
-                btnSalvarFirebase.IsEnabled = false;
-                txtStatus.Text = "Salvando no Firebase...";
-
-                // Usa o método que você criou na imagem enviada!
                 await _firebaseService.SalvarNoHistoricoAsync(_viewModel.Selecionado);
-
-                MessageBox.Show("Dados salvos no Firebase com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
-                txtStatus.Text = "Salvo com sucesso!";
+                MessageBox.Show("Salvo com sucesso!");
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Erro ao salvar no Firebase: " + ex.Message, "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
-                txtStatus.Text = "Erro ao salvar.";
-            }
-            finally
-            {
-                btnSalvarFirebase.IsEnabled = true;
-            }
+            catch (System.Exception ex) { MessageBox.Show("Erro: " + ex.Message); }
         }
 
         private void lstResultados_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Quando você clica em um item da lista, o mapa voa para lá!
             if (_viewModel.Selecionado != null)
             {
-                var lat = _viewModel.Selecionado.Latitude;
                 var lon = _viewModel.Selecionado.Longitude;
-
+                var lat = _viewModel.Selecionado.Latitude;
                 var (x, y) = SphericalMercator.FromLonLat(lon, lat);
-                var point = new Mapsui.MPoint(x, y);
-
-                mapControl.Map.Navigator.CenterOn(point);
-                mapControl.Map.Navigator.ZoomTo(2); git add .
+                mapControl.Map.Navigator.CenterOn(new Mapsui.MPoint(x, y));
+                mapControl.Map.Navigator.ZoomTo(2);
             }
         }
     }
