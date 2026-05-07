@@ -2,64 +2,95 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
-        Title="GeoDataInsight - Gerenciador de Localização" Height="600" Width="1000">
+        Title="GeoDataInsight - Gerenciador de Localização" Height="650" Width="1100">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="380"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Margin="10">
-            <TextBlock Text="Buscar Localização" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="15">
+                <TextBlock Text="Buscar Localização" FontSize="20" FontWeight="Bold" Margin="0,0,0,5"/>
 
-            <DockPanel Margin="0,0,0,10">
-                <Button x:Name="btnBuscar" Content="Buscar" Width="80" DockPanel.Dock="Right" Click="btnBuscar_Click"/>
-                <TextBox x:Name="txtBusca" Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,5,0"/>
-            </DockPanel>
+                <TextBlock Text="Pesquise por nome, rua ou cidade para visualizar os marcadores no mapa." 
+                           Foreground="DimGray" FontSize="12" Margin="0,0,0,10" TextWrapping="Wrap"/>
 
-            <TextBlock Text="Resultados:" FontWeight="SemiBold" Margin="0,5"/>
-            <ListBox x:Name="lstResultados" Height="150" 
-                     ItemsSource="{Binding Resultados}" 
-                     SelectedItem="{Binding Selecionado}"
-                     SelectionChanged="lstResultados_SelectionChanged">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Logradouro}"/>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                <DockPanel Margin="0,0,0,15">
+                    <Button x:Name="btnBuscar" Content="Buscar" Width="80" Height="28" DockPanel.Dock="Right" Click="btnBuscar_Click"/>
+                    <TextBox x:Name="txtBusca" Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}" 
+                             Margin="0,0,8,0" Height="28" VerticalContentAlignment="Center"/>
+                </DockPanel>
 
-            <Separator Margin="0,15"/>
+                <TextBlock Text="Resultados da Pesquisa:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                <ListBox x:Name="lstResultados" Height="150" 
+                         ItemsSource="{Binding Resultados}" 
+                         SelectedItem="{Binding Selecionado}"
+                         SelectionChanged="lstResultados_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="5">
+                                <TextBlock Text="{Binding Logradouro}" FontWeight="Medium"/>
+                                <TextBlock Text="{Binding Bairro}" FontSize="11" Foreground="Gray"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
-            <TextBlock Text="Detalhes da Seleção" FontWeight="Bold" Margin="0,0,0,10"/>
+                <Separator Margin="0,20" Background="#DDD"/>
 
-            <TextBlock Text="ID:"/>
-            <TextBox Text="{Binding Selecionado.Id, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                <StackPanel Visibility="{Binding IsPanelVisible, Converter={StaticResource BoolToVis}}">
 
-            <TextBlock Text="Logradouro:"/>
-            <TextBox Text="{Binding Selecionado.Logradouro, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="Detalhes da Seleção" FontSize="18" FontWeight="Bold" Foreground="#CC0000" Margin="0,0,0,15"/>
 
-            <TextBlock Text="Número:"/>
-            <TextBox Text="{Binding Selecionado.Numero, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="ID:" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding Selecionado.Id, Mode=OneWay}" IsReadOnly="True" Margin="0,2,0,10" Background="#F9F9F9"/>
 
-            <TextBlock Text="Bairro:"/>
-            <TextBox Text="{Binding Selecionado.Bairro, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="Logradouro:" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding Selecionado.Logradouro, Mode=OneWay}" IsReadOnly="True" Margin="0,2,0,10"/>
 
-            <TextBlock Text="CEP:"/>
-            <TextBox Text="{Binding Selecionado.Cep, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="Número:" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding Selecionado.Numero, Mode=OneWay}" IsReadOnly="True" Margin="0,2,0,10"/>
 
-            <TextBlock Text="Latitude:"/>
-            <TextBox Text="{Binding Selecionado.Latitude, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="Bairro:" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding Selecionado.Bairro, Mode=OneWay}" IsReadOnly="True" Margin="0,2,0,10"/>
 
-            <TextBlock Text="Longitude:"/>
-            <TextBox Text="{Binding Selecionado.Longitude, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,5"/>
+                    <TextBlock Text="CEP:" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding Selecionado.Cep, Mode=OneWay}" IsReadOnly="True" Margin="0,2,0,10"/>
 
-            <Button x:Name="btnSalvarFirebase" Content="Salvar no Histórico" Margin="0,10,0,0" Click="btnSalvarFirebase_Click"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Latitude:" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding Selecionado.Latitude, Mode=OneWay}" IsReadOnly="True" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Longitude:" FontWeight="SemiBold"/>
+                            <TextBox Text="{Binding Selecionado.Longitude, Mode=OneWay}" IsReadOnly="True" />
+                        </StackPanel>
+                    </Grid>
 
-            <TextBlock Text="{Binding StatusMensagem}" Foreground="Gray" Margin="0,10"/>
-        </StackPanel>
+                    <Button x:Name="btnSalvar" Content="Salvar no Histórico" 
+                            Command="{Binding SalvarCommand}"
+                            Margin="0,25,0,0" Height="35" FontWeight="Bold"
+                            Background="#E0E0E0"/>
 
-        <Border Grid.Column="1" BorderBrush="LightGray" BorderThickness="1,0,0,0">
+                    <TextBlock Text="{Binding StatusMensagem}" Foreground="Green" 
+                               HorizontalAlignment="Center" Margin="0,10,0,0" FontStyle="Italic"/>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Border Grid.Column="1" BorderBrush="#CCC" BorderThickness="1,0,0,0">
             <mapsui:MapControl x:Name="mapControl"/>
         </Border>
     </Grid>

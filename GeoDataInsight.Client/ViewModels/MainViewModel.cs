@@ -27,6 +27,7 @@ namespace GeoDataInsight.Client.ViewModels
         }
 
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
+
         public LocationModel? Selecionado
         {
             get => _selecionado;
@@ -38,25 +39,35 @@ namespace GeoDataInsight.Client.ViewModels
             get => _isPanelVisible;
             set { _isPanelVisible = value; OnPropertyChanged(); }
         }
+
         public ICommand MarkerClickCommand { get; }
         public ICommand SalvarCommand { get; }
 
         public MainViewModel()
         {
+   
             IsPanelVisible = false;
 
             MarkerClickCommand = new RelayCommand(p => {
                 if (p is LocationModel loc)
                 {
+                   
                     Selecionado = loc;
                     IsPanelVisible = true;
+                }
+                else
+                {
+    
+                    Selecionado = null;
+                    IsPanelVisible = false;
                 }
             });
 
             SalvarCommand = new RelayCommand(p => {
-
                 StatusMensagem = "Localização salva no histórico com sucesso!";
-                IsPanelVisible = false; 
+
+              
+                IsPanelVisible = false;
             });
         }
 
