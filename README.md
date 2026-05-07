@@ -194,3 +194,26 @@ O Squad 1 envia os dados do local selecionado para a **API REST do Squad 2** via
 ```
  
 ---
+
+## 👥 Equipe — Squad 1
+ 
+| Posição | Nome |
+|---|---|
+| Primeiro | Vinícius Augusto|
+| **Segundo** | Lucas Aquino|
+| Terceiro | Luis Ivan |
+| Quarto | Alice Virgilia |
+| Quinto | Danilo da Silva |
+| Sexto | Erick Silva |
+ 
+---
+ 
+## 📄 Licença
+ 
+Projeto desenvolvido para fins educacionais — Curso Técnico em Desenvolvimento de Sistemas Noite.  
+Instrutor: **Frederico Aguiar**
+ 
+---
+ 
+*GeoData Insight — Aula 08 | Situação de Aprendizagem | Squad 1 - Aplicação Cliente WPF*
+ 
