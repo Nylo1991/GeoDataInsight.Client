@@ -35,7 +35,7 @@ Durante o planejamento, identificamos que nossos maiores pontos de atenção ser
 ### 📸 Evidências do Planejamento
 Os registros, ferramentas utilizadas e capturas de tela (prints) dessa etapa colaborativa foram documentados e salvos no repositório para fins de auditoria, avaliação dos instrutores e histórico do projeto.
 
-* [📂 Clique aqui para visualizar os registros e prints do Planning Poker]
+* [📂 Clique aqui para visualizar os registros e prints do Planning Poker] https://github.com/vncsqxy/GeoDataInsight.Client/tree/b20c64d4510bf1c13c152650d9595b034d88a492/imagens
 
 - ---
  
