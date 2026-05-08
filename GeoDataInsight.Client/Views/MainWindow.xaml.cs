@@ -1,94 +1,58 @@
-﻿using System;
+﻿using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using GeoDataInsight.Client.ViewModels;
-using GeoDataInsight.Client.Services;
+using Mapsui;
 using Mapsui.Tiling;
+using Mapsui.Layers;
 using Mapsui.Projections;
+using GeoDataInsight.Client.ViewModels;
 
 namespace GeoDataInsight.Client.Views
 {
     public partial class MainWindow : Window
     {
-        private readonly MainViewModel _viewModel;
-        private readonly MapService _mapService;
+        private WritableLayer _layerPins;
+        private MainViewModel _viewModel;
 
         public MainWindow()
         {
             InitializeComponent();
 
             _viewModel = new MainViewModel();
-            _mapService = new MapService();
+            DataContext = _viewModel;
 
-            this.DataContext = _viewModel;
+            // Fica de olho quando você clica em um item da lista
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-            InitializeMap();
+            InicializarMapa();
         }
 
-        private void InitializeMap()
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.Selecionado) && _viewModel.Selecionado != null)
+            {
+                FocarLocal(_viewModel.Selecionado.Latitude, _viewModel.Selecionado.Longitude);
+            }
+        }
+
+        private void InicializarMapa()
         {
             var map = new Mapsui.Map();
             map.Layers.Add(OpenStreetMap.CreateTileLayer());
+
+            _layerPins = new WritableLayer { Name = "Pontos" };
+            map.Layers.Add(_layerPins);
+
             mapControl.Map = map;
+
+            // Foco inicial em Nova Lima
+            FocarLocal(-19.982, -43.847);
         }
 
-        private async void btnBuscar_Click(object sender, RoutedEventArgs e)
+        private void FocarLocal(double lat, double lon)
         {
-            if (string.IsNullOrWhiteSpace(_viewModel.TermoBusca)) return;
-
-            try
-            {
-                _viewModel.StatusMensagem = "Buscando...";
-                btnBuscar.IsEnabled = false;
-
-                var resultados = await _mapService.SearchLocationAsync(_viewModel.TermoBusca);
-
-                _viewModel.Resultados.Clear();
-                foreach (var local in resultados)
-                {
-                    _viewModel.Resultados.Add(local);
-                }
-
-                _viewModel.StatusMensagem = resultados.Count > 0 ? "Busca concluída" : "Nenhum local encontrado";
-            }
-            catch (System.Exception ex)
-            {
-                MessageBox.Show($"Erro na busca: {ex.Message}");
-                _viewModel.StatusMensagem = "Erro na operação";
-            }
-            finally
-            {
-                btnBuscar.IsEnabled = true;
-            }
-        }
-
-        private void lstResultados_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_viewModel.Selecionado != null)
-            {
-                var lon = _viewModel.Selecionado.Longitude;
-                var lat = _viewModel.Selecionado.Latitude;
-
-                // Converte coordenadas para o formato do Mapsui (Spherical Mercator)
-                var (x, y) = SphericalMercator.FromLonLat(lon, lat);
-
-                // CORREÇÃO CS1061: Forma correta de centralizar e dar zoom nas versões atuais do Mapsui
-                mapControl.Map?.Navigator.CenterOnAndZoomTo(new Mapsui.MPoint(x, y), 2);
-
-                _viewModel.StatusMensagem = $"Localizado: {_viewModel.Selecionado.Logradouro}";
-            }
-        }
-
-        private void btnSalvarFirebase_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.Selecionado == null)
-            {
-                MessageBox.Show("Selecione um local na lista primeiro.");
-                return;
-            }
-
-            // Lógica de salvar será implementada após a limpeza total
-            MessageBox.Show($"Pronto para salvar o ID: {_viewModel.Selecionado.Id} no Firebase.");
+            var smPoint = SphericalMercator.FromLonLat(lon, lat);
+            mapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(smPoint.x, smPoint.y), 15);
+            mapControl.Refresh();
         }
     }
 }

@@ -3,16 +3,21 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using GeoDataInsight.Client.Models;
-using GeoDataInsight.Client.Helpers; // Necessário para o RelayCommand
+using GeoDataInsight.Client.Helpers;
 
 namespace GeoDataInsight.Client.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
         private string _termoBusca = string.Empty;
-        private string _statusMensagem = "Pronto";
-        private LocationModel? _selecionado;
-        private bool _isPanelVisible;
+        private LocationModel _selecionado;
+
+        public MainViewModel()
+        {
+            BuscarCommand = new RelayCommand(ExecutarBusca);
+        }
+
+        public ICommand BuscarCommand { get; }
 
         public string TermoBusca
         {
@@ -20,62 +25,45 @@ namespace GeoDataInsight.Client.ViewModels
             set { _termoBusca = value; OnPropertyChanged(); }
         }
 
-        public string StatusMensagem
-        {
-            get => _statusMensagem;
-            set { _statusMensagem = value; OnPropertyChanged(); }
-        }
-
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
 
-        public LocationModel? Selecionado
+        public LocationModel Selecionado
         {
             get => _selecionado;
-            set { _selecionado = value; OnPropertyChanged(); }
+            set
+            {
+                _selecionado = value;
+                OnPropertyChanged();
+            }
         }
 
-        public bool IsPanelVisible
+        private void ExecutarBusca(object obj)
         {
-            get => _isPanelVisible;
-            set { _isPanelVisible = value; OnPropertyChanged(); }
-        }
-
-        public ICommand MarkerClickCommand { get; }
-        public ICommand SalvarCommand { get; }
-
-        public MainViewModel()
-        {
-   
-            IsPanelVisible = false;
-
-            MarkerClickCommand = new RelayCommand(p => {
-                if (p is LocationModel loc)
+            Resultados.Clear();
+            if (!string.IsNullOrWhiteSpace(TermoBusca))
+            {
+                Resultados.Add(new LocationModel
                 {
-                   
-                    Selecionado = loc;
-                    IsPanelVisible = true;
-                }
-                else
+                    Logradouro = "Sede AngloGold Ashanti",
+                    Bairro = "Nova Lima",
+                    Latitude = -19.9850,
+                    Longitude = -43.8450,
+                    Cep = "34000-000"
+                });
+
+                Resultados.Add(new LocationModel
                 {
-    
-                    Selecionado = null;
-                    IsPanelVisible = false;
-                }
-            });
-
-            SalvarCommand = new RelayCommand(p => {
-                StatusMensagem = "Localização salva no histórico com sucesso!";
-
-              
-                IsPanelVisible = false;
-            });
+                    Logradouro = "Rio das Velhas - Área de Pesca",
+                    Bairro = "Rio Acima",
+                    Latitude = -20.0880,
+                    Longitude = -43.7910,
+                    Cep = "34300-000"
+                });
+            }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string name = null!)
-        {
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
     }
 }
