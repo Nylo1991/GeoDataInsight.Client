@@ -142,19 +142,22 @@ GeoDataInsight.Client/
  
 ---
 
-## ☁️ Configuração do Firebase
- 
-1. Acesse [https://console.firebase.google.com](https://console.firebase.google.com)
-2. Crie um projeto chamado `geosquadexplorer` (ou outro nome)
-3. Ative o **Realtime Database**
-4. Copie a URL do banco (ex: `https://seu-projeto-default-rtdb.firebaseio.com/`)
-5. No arquivo `Services/FirebaseService.cs`, substitua a URL:
+# Configuração e Integração com Firebase
+
+A aplicação utiliza o **Firebase Realtime Database** para persistir o histórico de localizações de forma assíncrona.
+
+### Passo a Passo de Configuração:
+1. Acesse o [Console do Firebase](https://console.firebase.google.com/).
+2. Projeto oficial: `geosquadexplorer`.
+3. O banco de dados está configurado no `HistoricoBuscas`.
+4. URL gerada: [https://geosquadexplorer-default-rtdb.firebaseio.com/](https://geosquadexplorer-default-rtdb.firebaseio.com/)
+
+### No Código do Projeto:
+No arquivo `Services/FirebaseService.cs`, a integração é centralizada na variável:
 ```csharp
-private readonly string FireBaseUrl = "https://SEU-PROJETO-default-rtdb.firebaseio.com/";
+private readonly string FireBaseUrl = "[https://geosquadexplorer-default-rtdb.firebaseio.com/](https://geosquadexplorer-default-rtdb.firebaseio.com/)";
+
 ```
- 
-> O projeto já está pré-configurado com a URL `geosquadexplorer-default-rtdb.firebaseio.com`.
- 
 ---
 
 ## 🚀 Como Executar
