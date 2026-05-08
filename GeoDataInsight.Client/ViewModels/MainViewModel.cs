@@ -3,9 +3,10 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Threading.Tasks;
+using System.Linq;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Helpers;
-using GeoDataInsight.Client.Services; // Certifique-se de que este using existe
+using GeoDataInsight.Client.Services;
 
 namespace GeoDataInsight.Client.ViewModels
 {
@@ -13,16 +14,28 @@ namespace GeoDataInsight.Client.ViewModels
     {
         private string _termoBusca = string.Empty;
         private LocationModel _selecionado;
-        private readonly MapService _mapService; // Instância do serviço real
+        private bool _isSugestoesAberto;
+        private readonly MapService _mapService;
 
         public MainViewModel()
         {
             _mapService = new MapService();
-            // Transformamos o comando em assíncrono para não travar a interface
             BuscarCommand = new RelayCommand(async (obj) => await ExecutarBusca());
+
+            // Comando para quando o usuário clicar em um item do histórico
+            SelecionarHistoricoCommand = new RelayCommand((obj) =>
+            {
+                if (obj is string termo)
+                {
+                    TermoBusca = termo;
+                    IsSugestoesAberto = false;
+                    _ = ExecutarBusca(); // Dispara a busca
+                }
+            });
         }
 
         public ICommand BuscarCommand { get; }
+        public ICommand SelecionarHistoricoCommand { get; }
 
         public string TermoBusca
         {
@@ -31,30 +44,44 @@ namespace GeoDataInsight.Client.ViewModels
             {
                 _termoBusca = value;
                 OnPropertyChanged();
-                // Opcional: Poderia disparar uma pesquisa automática aqui para "sugestões"
+
+                // Abre as sugestões se o campo não estiver vazio e houver histórico
+                if (HistoricoPesquisas.Any())
+                    IsSugestoesAberto = true;
             }
+        }
+
+        public bool IsSugestoesAberto
+        {
+            get => _isSugestoesAberto;
+            set { _isSugestoesAberto = value; OnPropertyChanged(); }
         }
 
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
 
+        // Guarda os termos já pesquisados
+        public ObservableCollection<string> HistoricoPesquisas { get; set; } = new ObservableCollection<string>();
+
         public LocationModel Selecionado
         {
             get => _selecionado;
-            set
-            {
-                _selecionado = value;
-                OnPropertyChanged();
-            }
+            set { _selecionado = value; OnPropertyChanged(); }
         }
 
-        // Método agora é assíncrono e utiliza o serviço real
         private async Task ExecutarBusca()
         {
             if (string.IsNullOrWhiteSpace(TermoBusca)) return;
 
+            IsSugestoesAberto = false; // Fecha o popup
             Resultados.Clear();
 
-            // Chama a API do OpenStreetMap através do seu MapService
+            // Adiciona ao histórico se não existir (limita aos 5 últimos)
+            if (!HistoricoPesquisas.Contains(TermoBusca))
+            {
+                HistoricoPesquisas.Insert(0, TermoBusca);
+                if (HistoricoPesquisas.Count > 5) HistoricoPesquisas.RemoveAt(5);
+            }
+
             var locaisEncontrados = await _mapService.SearchLocationAsync(TermoBusca);
 
             foreach (var local in locaisEncontrados)

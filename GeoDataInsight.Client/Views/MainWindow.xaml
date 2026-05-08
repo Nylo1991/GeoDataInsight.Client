@@ -4,82 +4,176 @@
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
         Title="GeoDataInsight - Inteligência Geográfica" Height="768" Width="1366"
         WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI" Background="#E5E7EB">
+        FontFamily="Segoe UI Variable, Segoe UI" Background="#F3F4F6">
 
     <Grid>
         <mapsui:MapControl x:Name="mapControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0"/>
 
-        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Width="420" MaxHeight="680" 
-                Margin="25" Background="#FAFFFFFF" CornerRadius="16" Panel.ZIndex="1"
+        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Width="400" MaxHeight="700" 
+                Margin="24" Background="#FFFFFFFF" CornerRadius="20" Panel.ZIndex="1"
                 BorderBrush="#E5E7EB" BorderThickness="1">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="30" ShadowDepth="10" Opacity="0.2" Color="#000000"/>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="8" Opacity="0.12" Color="#000000" Direction="270"/>
             </Border.Effect>
 
-            <Grid Margin="25">
+            <Grid Margin="0,24,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="0,0,0,25">
-                    <TextBlock Text="GeoDataInsight" FontSize="26" FontWeight="Black" Foreground="#111827"/>
-                    <TextBlock Text="Encontre localizações precisas no mapa" FontSize="14" Foreground="#6B7280" Margin="0,4,0,0"/>
+                <StackPanel Grid.Row="0" Margin="24,0,24,20">
+                    <TextBlock Text="GeoDataInsight" FontSize="24" FontWeight="Black" Foreground="#111827"/>
+                    <TextBlock Text="Explore o mundo com precisão" FontSize="14" Foreground="#6B7280" Margin="0,4,0,0" FontWeight="Medium"/>
                 </StackPanel>
 
-                <Border Grid.Row="1" Background="#FFFFFF" CornerRadius="10" Height="55" 
-                        BorderBrush="#D1D5DB" BorderThickness="1" Padding="5">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <Grid Grid.Row="1" Margin="24,0,24,0" x:Name="SearchGrid">
+                    <Border x:Name="SearchBorder" Background="#F9FAFB" CornerRadius="24" Height="48" 
+                            BorderBrush="#D1D5DB" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="📍" VerticalAlignment="Center" Margin="15,0,10,0" FontSize="18"/>
+                            <TextBlock Grid.Column="0" Text="📍" VerticalAlignment="Center" Margin="16,0,10,0" FontSize="16"/>
 
-                        <TextBox Grid.Column="1" Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}" 
-                                 BorderThickness="0" Background="Transparent" FontSize="16" 
-                                 VerticalContentAlignment="Center" Foreground="#1F2937"/>
+                            <TextBox Grid.Column="1" Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}" 
+                                     BorderThickness="0" Background="Transparent" FontSize="15" 
+                                     VerticalContentAlignment="Center" Foreground="#111827">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Return" Command="{Binding BuscarCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
 
-                        <Button Grid.Column="2" Command="{Binding BuscarCommand}" 
-                                Background="#2563EB" Foreground="White" BorderThickness="0" Width="45" Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </Button.Resources>
-                            <TextBlock Text="🔍" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16"/>
-                        </Button>
-                    </Grid>
-                </Border>
+                            <Button Grid.Column="2" Command="{Binding BuscarCommand}" 
+                                    Background="#3B82F6" Foreground="White" BorderThickness="0" Width="40" Height="40" 
+                                    Cursor="Hand" Margin="0,0,4,0">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="20"/>
+                                    </Style>
+                                </Button.Resources>
+                                <TextBlock Text="🔍" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" Foreground="White"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <Popup IsOpen="{Binding IsSugestoesAberto}" StaysOpen="False" PlacementTarget="{Binding ElementName=SearchBorder}" 
+                           Placement="Bottom" VerticalOffset="4" AllowsTransparency="True" PopupAnimation="Slide">
+                        <Border Width="{Binding ElementName=SearchBorder, Path=ActualWidth}" Background="White" 
+                                CornerRadius="12" BorderBrush="#E5E7EB" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.1" Color="#000000"/>
+                            </Border.Effect>
+                            <StackPanel Margin="0,8">
+                                <TextBlock Text="Pesquisas Recentes" FontSize="12" FontWeight="Bold" Foreground="#9CA3AF" Margin="16,4,16,8"/>
+                                <ItemsControl ItemsSource="{Binding HistoricoPesquisas}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding DataContext.SelecionarHistoricoCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="16,10">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="🕒" Foreground="#9CA3AF" Margin="0,0,12,0" FontSize="14" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding}" FontSize="14" Foreground="#374151" VerticalAlignment="Center" FontWeight="Medium"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
 
                 <ListBox Grid.Row="2" ItemsSource="{Binding Resultados}" SelectedItem="{Binding Selecionado}" 
-                         BorderThickness="0" Background="Transparent" Margin="0,20,0,0" 
-                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                         BorderThickness="0" Background="Transparent" Margin="24,20,24,0" 
+                         ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Margin" Value="0,0,0,10"/>
+                            <Setter Property="Margin" Value="0,0,0,16"/>
                             <Setter Property="Cursor" Value="Hand"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="0.8"/>
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#FFFFFF" CornerRadius="10" Padding="15" 
-                                    BorderBrush="#E5E7EB" BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Logradouro}" FontWeight="Bold" FontSize="16" Foreground="#111827" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Bairro}" FontSize="14" Foreground="#4B5563" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                            <Border Background="#FFFFFF" CornerRadius="16" Padding="16" 
+                                    BorderBrush="#F3F4F6" BorderThickness="2">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                        <Border Background="#DBEAFE" CornerRadius="5" Padding="6,3">
-                                            <TextBlock Text="{Binding Cep}" FontSize="12" FontWeight="SemiBold" Foreground="#1D4ED8"/>
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                                        <Border Background="#EFF6FF" CornerRadius="6" Padding="6,4">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding IconeCategoria}" Margin="0,0,6,0" FontSize="12" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Categoria}" Foreground="#2563EB" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            </StackPanel>
                                         </Border>
                                     </StackPanel>
-                                </StackPanel>
+
+                                    <Grid Grid.Row="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="12" Background="#F3F4F6" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding IconeImagem}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Opacity="0.8"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                                            <TextBlock Text="{Binding Logradouro}" FontWeight="Bold" FontSize="15" Foreground="#111827" TextWrapping="Wrap" LineHeight="20"/>
+
+                                            <TextBlock FontSize="13" Foreground="#6B7280" Margin="0,4,0,0" TextWrapping="Wrap" LineHeight="18">
+                                                <Run Text="{Binding Bairro}"/>
+                                                <Run Text=", "/>
+                                                <Run Text="{Binding Cep}"/>
+                                            </TextBlock>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <TextBlock Text="{Binding Avaliacao}" Foreground="#D97706" FontWeight="Black" FontSize="13" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="⭐⭐⭐⭐⭐" FontSize="11" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding TotalAvaliacoes}" Foreground="#9CA3AF" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Grid.Row="2" Margin="0,16,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                            <TextBlock Text="📞" HorizontalAlignment="Center" FontSize="16" Foreground="#3B82F6"/>
+                                            <TextBlock Text="Ligar" HorizontalAlignment="Center" Foreground="#3B82F6" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                            <TextBlock Text="🔖" HorizontalAlignment="Center" FontSize="16" Foreground="#3B82F6"/>
+                                            <TextBlock Text="Salvar" HorizontalAlignment="Center" Foreground="#3B82F6" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="🧭" HorizontalAlignment="Center" FontSize="16" Foreground="#3B82F6"/>
+                                            <TextBlock Text="Rotas" HorizontalAlignment="Center" Foreground="#3B82F6" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
