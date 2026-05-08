@@ -1,4 +1,4 @@
-﻿sbusing System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -47,7 +47,8 @@ namespace GeoDataInsight.Client.Services
                         Cep = addr?.postcode ?? "00000-000",
                         Latitude = double.Parse(item.lat, CultureInfo.InvariantCulture),
                         Longitude = double.Parse(item.lon, CultureInfo.InvariantCulture),
-                        Timestamp = DateTime.Now
+                        // Adicione o .ToString() especificando o formato:
+                        Timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
                     });
                 }
 
