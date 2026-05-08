@@ -37,14 +37,26 @@ namespace GeoDataInsight.Client.Views
         private void InicializarMapa()
         {
             var map = new Mapsui.Map();
-            map.Layers.Add(OpenStreetMap.CreateTileLayer());
 
-            _layerPins = new WritableLayer { Name = "Pontos" };
+            // 1. URL pública do satélite da ESRI (ArcGIS)
+            string urlSatelite = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+
+            // 2. Criamos a fonte do mapa manualmente, sem depender do enum do BruTile
+            var fonteSatelite = new BruTile.Web.HttpTileSource(
+                new BruTile.Predefined.GlobalSphericalMercator(),
+                urlSatelite,
+                name: "Satelite_ESRI");
+
+            // 3. Adicionamos a camada de imagem ao mapa
+            map.Layers.Add(new Mapsui.Tiling.Layers.TileLayer(fonteSatelite));
+
+            // Camada para os pinos de localização
+            _layerPins = new Mapsui.Layers.WritableLayer { Name = "Pontos" };
             map.Layers.Add(_layerPins);
 
             mapControl.Map = map;
 
-            // Foco inicial em Nova Lima
+            // Foco inicial (coordenadas de Nova Lima)
             FocarLocal(-19.982, -43.847);
         }
 

@@ -2,8 +2,10 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Threading.Tasks;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Helpers;
+using GeoDataInsight.Client.Services; // Certifique-se de que este using existe
 
 namespace GeoDataInsight.Client.ViewModels
 {
@@ -11,10 +13,13 @@ namespace GeoDataInsight.Client.ViewModels
     {
         private string _termoBusca = string.Empty;
         private LocationModel _selecionado;
+        private readonly MapService _mapService; // Instância do serviço real
 
         public MainViewModel()
         {
-            BuscarCommand = new RelayCommand(ExecutarBusca);
+            _mapService = new MapService();
+            // Transformamos o comando em assíncrono para não travar a interface
+            BuscarCommand = new RelayCommand(async (obj) => await ExecutarBusca());
         }
 
         public ICommand BuscarCommand { get; }
@@ -22,7 +27,12 @@ namespace GeoDataInsight.Client.ViewModels
         public string TermoBusca
         {
             get => _termoBusca;
-            set { _termoBusca = value; OnPropertyChanged(); }
+            set
+            {
+                _termoBusca = value;
+                OnPropertyChanged();
+                // Opcional: Poderia disparar uma pesquisa automática aqui para "sugestões"
+            }
         }
 
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
@@ -37,28 +47,19 @@ namespace GeoDataInsight.Client.ViewModels
             }
         }
 
-        private void ExecutarBusca(object obj)
+        // Método agora é assíncrono e utiliza o serviço real
+        private async Task ExecutarBusca()
         {
-            Resultados.Clear();
-            if (!string.IsNullOrWhiteSpace(TermoBusca))
-            {
-                Resultados.Add(new LocationModel
-                {
-                    Logradouro = "Sede AngloGold Ashanti",
-                    Bairro = "Nova Lima",
-                    Latitude = -19.9850,
-                    Longitude = -43.8450,
-                    Cep = "34000-000"
-                });
+            if (string.IsNullOrWhiteSpace(TermoBusca)) return;
 
-                Resultados.Add(new LocationModel
-                {
-                    Logradouro = "Rio das Velhas - Área de Pesca",
-                    Bairro = "Rio Acima",
-                    Latitude = -20.0880,
-                    Longitude = -43.7910,
-                    Cep = "34300-000"
-                });
+            Resultados.Clear();
+
+            // Chama a API do OpenStreetMap através do seu MapService
+            var locaisEncontrados = await _mapService.SearchLocationAsync(TermoBusca);
+
+            foreach (var local in locaisEncontrados)
+            {
+                Resultados.Add(local);
             }
         }
 
