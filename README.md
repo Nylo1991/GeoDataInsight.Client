@@ -15,6 +15,29 @@ Esta aplicação é responsável por:
 - Integrar-se com o backend do **Squad 2** para persistência central dos dados
 
 - ---
+
+
+## Planejamento e Estimativas de tempo (Planning Poker)
+
+Antes de escrevermos a primeira linha de código, o **Squad 1** realizou uma sessão utilizando o **Planning Poker** (fase de concepção e planejamento). Essa dinâmica foi essencial para garantir que todos os membros da equipe estivessem completamente alinhados com o escopo e a complexidade do projeto. 
+
+### Como a dinâmica foi conduzida
+* **Análise de Requisitos:** Lemos e interpretamos em grupo cada funcionalidade exigida pelo projeto (consumo da API, integração, persistência no Firebase e comunicação com o Squad 2).
+* **Sistema de Pontuação:** Utilizamos uma escala baseada na sequência de Fibonacci (1, 2, 3, 5, 8, 13, 21...) para estimar a complexidade técnica, o esforço de codificação e a incerteza de cada tarefa.
+* **Divisão de Esforços:** Com as complexidades definidas, conseguimos criar o nosso backlog e distribuir as atividades de forma equilibrada entre os 6 membros do squad.
+
+### 💡 Principais Desafios Mapeados na Sessão
+Durante o planejamento, identificamos que nossos maiores pontos de atenção seriam:
+1. A curva de aprendizado para configurar e manipular o mapa interativo.
+2. A correta implementação e disciplina de manter o padrão **MVVM** (separando completamente o XAML da regra de negócio).
+3. O tratamento de concorrência e respostas de erro na comunicação assíncrona com as APIs (OpenStreetMap e Firebase).
+
+### 📸 Evidências do Planejamento
+Os registros, ferramentas utilizadas e capturas de tela (prints) dessa etapa colaborativa foram documentados e salvos no repositório para fins de auditoria, avaliação dos instrutores e histórico do projeto.
+
+* [📂 Clique aqui para visualizar os registros e prints do Planning Poker]
+
+- ---
  
 ##  Arquitetura do Sistema
  
