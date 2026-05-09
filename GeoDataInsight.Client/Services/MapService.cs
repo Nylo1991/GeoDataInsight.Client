@@ -22,7 +22,15 @@ namespace GeoDataInsight.Client.Services
         {
             try
             {
-                string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}&format=json&addressdetails=1&limit=5";
+                // Define uma "caixa" de prioridade na região metropolitana (Nova Lima, BH, Rio Acima, etc.)
+                // Formato: viewbox=Esquerda(Lon), Topo(Lat), Direita(Lon), Fundo(Lat)
+                string viewbox = "-44.10,-19.70,-43.50,-20.20";
+
+                // Monta a URL com filtro de país (Brasil), idioma e prioridade regional
+                string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}" +
+                             $"&format=json&addressdetails=1&limit=5" +
+                             $"&countrycodes=br&accept-language=pt-BR" +
+                             $"&viewbox={viewbox}";
 
                 var response = await _httpClient.GetStringAsync(url);
                 var results = JsonConvert.DeserializeObject<List<OsmResult>>(response);

@@ -4,6 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Diagnostics;
+using System.Windows;
+using System.Globalization;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Helpers;
 using GeoDataInsight.Client.Services;
@@ -16,6 +19,12 @@ namespace GeoDataInsight.Client.ViewModels
         private LocationModel _selecionado;
         private bool _isSugestoesAberto;
         private readonly MapService _mapService;
+
+        public ICommand BuscarCommand { get; }
+        public ICommand SelecionarHistoricoCommand { get; }
+        public ICommand LigarCommand { get; }
+        public ICommand SalvarCommand { get; }
+        public ICommand RotasCommand { get; }
 
         public MainViewModel()
         {
@@ -32,10 +41,12 @@ namespace GeoDataInsight.Client.ViewModels
                     _ = ExecutarBusca(); // Dispara a busca
                 }
             });
-        }
 
-        public ICommand BuscarCommand { get; }
-        public ICommand SelecionarHistoricoCommand { get; }
+            // AQUI ESTAVA FALTANDO: Ligando os botões aos métodos!
+            LigarCommand = new RelayCommand(ExecutarLigar);
+            SalvarCommand = new RelayCommand(async (obj) => await ExecutarSalvar(obj));
+            RotasCommand = new RelayCommand(ExecutarRotas);
+        }
 
         public string TermoBusca
         {
@@ -87,6 +98,54 @@ namespace GeoDataInsight.Client.ViewModels
             foreach (var local in locaisEncontrados)
             {
                 Resultados.Add(local);
+            }
+        }
+
+        private void ExecutarLigar(object obj)
+        {
+            if (obj is LocationModel local)
+            {
+                // Como não temos o telefone na API, exibimos uma mensagem amigável
+                MessageBox.Show($"Iniciando chamada para a recepção de:\n{local.Logradouro}",
+                                "Discador", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async Task ExecutarSalvar(object obj)
+        {
+            if (obj is LocationModel local)
+            {
+                try
+                {
+                    var firebase = new FirebaseService();
+                    await firebase.SalvarNoHistoricoAsync(local);
+
+                    MessageBox.Show($"{local.Logradouro} salvo com sucesso no Firebase!",
+                                    "Salvo", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"Erro ao salvar no banco: {ex.Message}",
+                                    "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void ExecutarRotas(object obj)
+        {
+            if (obj is LocationModel local)
+            {
+                // Monta o link do Google Maps com a Latitude e Longitude
+                string lat = local.Latitude.ToString(CultureInfo.InvariantCulture);
+                string lon = local.Longitude.ToString(CultureInfo.InvariantCulture);
+                string url = $"http://maps.google.com/?q={lat},{lon}";
+
+                // Pede para o Windows abrir o link no navegador padrão
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
             }
         }
 
