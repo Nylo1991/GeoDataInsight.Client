@@ -22,15 +22,10 @@ namespace GeoDataInsight.Client.Services
         {
             try
             {
-                // Define uma "caixa" de prioridade na região metropolitana (Nova Lima, BH, Rio Acima, etc.)
-                // Formato: viewbox=Esquerda(Lon), Topo(Lat), Direita(Lon), Fundo(Lat)
-                string viewbox = "-44.10,-19.70,-43.50,-20.20";
-
-                // Monta a URL com filtro de país (Brasil), idioma e prioridade regional
+                // Aumentamos a precisão com addressdetails e extra_tags para pegar códigos regionais
                 string url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}" +
-                             $"&format=json&addressdetails=1&limit=5" +
-                             $"&countrycodes=br&accept-language=pt-BR" +
-                             $"&viewbox={viewbox}";
+                             $"&format=json&addressdetails=1&extratags=1&limit=15" +
+                             $"&accept-language=pt-BR";
 
                 var response = await _httpClient.GetStringAsync(url);
                 var results = JsonConvert.DeserializeObject<List<OsmResult>>(response);
@@ -44,32 +39,25 @@ namespace GeoDataInsight.Client.Services
                 {
                     var addr = item.address;
 
-                    // Lógica para definir a Categoria e Ícone dinamicamente
-                    var cat = ObterCategoria(item.ClassType, item.type);
-
-                    // Simula uma avaliação fixa baseada no nome do local para manter o aspeto do Google Maps
-                    var random = new Random(item.display_name.GetHashCode());
-                    double nota = Math.Round(random.NextDouble() * (5.0 - 3.5) + 3.5, 1);
-                    int total = random.Next(10, 2000);
-                    string formatadoTotal = total > 1000 ? $"({Math.Round(total / 1000.0, 1)}k)" : $"({total})";
+                    // Identifica a Região/Continente (Lógica simplificada baseada no país ou extratags)
+                    string regiao = ObterRegiaoPorCodigoPais(addr?.country_code?.ToUpper());
 
                     listaFinal.Add(new LocationModel
                     {
                         Id = contadorId++,
-                        Logradouro = addr?.road ?? item.display_name.Split(',')[0],
+                        Logradouro = addr?.GetNomeLocal() ?? item.display_name.Split(',')[0],
                         Numero = addr?.house_number ?? "S/N",
-                        Bairro = addr?.suburb ?? addr?.neighbourhood ?? addr?.city_district ?? "Não informado",
-                        Cep = addr?.postcode ?? "00000-000",
+
+                        // Exibição do Bairro + País para dar contexto global
+                        Bairro = $"{(addr?.suburb ?? addr?.city ?? "N/A")}, {addr?.country?.ToUpper()}",
+
+                        // LÓGICA DE CÓDIGO POSTAL: 
+                        // Se não tem CEP, tenta um código regional das extratags ou o código do país + região
+                        Cep = addr?.postcode ?? (item.extratags?.ContainsKey("ref") == true ? item.extratags["ref"] : $"{addr?.country_code?.ToUpper()}-{regiao}"),
+
                         Latitude = double.Parse(item.lat, CultureInfo.InvariantCulture),
                         Longitude = double.Parse(item.lon, CultureInfo.InvariantCulture),
-                        Timestamp = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"),
-
-                        // Ligações da nova UI
-                        Categoria = cat.categoria,
-                        IconeCategoria = cat.icone,
-                        Avaliacao = nota.ToString("0.1", CultureInfo.InvariantCulture),
-                        TotalAvaliacoes = formatadoTotal,
-                        IconeImagem = cat.icone
+                        Timestamp = DateTime.Now
                     });
                 }
 
@@ -81,14 +69,19 @@ namespace GeoDataInsight.Client.Services
             }
         }
 
-        private (string icone, string categoria) ObterCategoria(string osmcClass, string osmType)
+        private string ObterRegiaoPorCodigoPais(string code)
         {
-            if (osmcClass == "amenity" || osmcClass == "shop" || osmcClass == "office") return ("🏢", "Business");
-            if (osmcClass == "highway") return ("🛣️", "Endereço");
-            if (osmcClass == "tourism" || osmcClass == "historic") return ("📸", "Turismo");
-            if (osmcClass == "building") return ("🏬", "Edifício");
-            if (osmcClass == "leisure" || osmcClass == "natural") return ("🌳", "Natureza/Lazer");
-            return ("📍", "Localização");
+            if (string.IsNullOrEmpty(code)) return "GL"; // Global
+
+            // Mapeamento básico de regiões
+            return code switch
+            {
+                "BR" or "AR" or "CL" or "CO" => "SA", // South America
+                "US" or "CA" or "MX" => "NA",         // North America
+                "FR" or "DE" or "IT" or "PT" => "EU", // Europe
+                "CN" or "JP" or "IN" => "AS",         // Asia
+                _ => "INT" // International
+            };
         }
 
         private class OsmResult
@@ -96,10 +89,8 @@ namespace GeoDataInsight.Client.Services
             public string display_name { get; set; } = string.Empty;
             public string lat { get; set; } = string.Empty;
             public string lon { get; set; } = string.Empty;
-            [JsonProperty("class")]
-            public string ClassType { get; set; } = string.Empty;
-            public string type { get; set; } = string.Empty;
             public OsmAddress? address { get; set; }
+            public Dictionary<string, string>? extratags { get; set; }
         }
 
         private class OsmAddress
@@ -107,9 +98,20 @@ namespace GeoDataInsight.Client.Services
             public string? road { get; set; }
             public string? house_number { get; set; }
             public string? suburb { get; set; }
-            public string? neighbourhood { get; set; }
-            public string? city_district { get; set; }
+            public string? city { get; set; }
             public string? postcode { get; set; }
+            public string? country { get; set; }
+            public string? country_code { get; set; }
+
+            // Pontos de interesse
+            public string? attraction { get; set; }
+            public string? tourism { get; set; }
+            public string? amenity { get; set; }
+
+            public string? GetNomeLocal()
+            {
+                return attraction ?? tourism ?? amenity ?? road;
+            }
         }
     }
 }

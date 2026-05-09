@@ -4,9 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Diagnostics;
 using System.Windows;
-using System.Globalization;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Helpers;
 using GeoDataInsight.Client.Services;
@@ -19,33 +17,37 @@ namespace GeoDataInsight.Client.ViewModels
         private LocationModel _selecionado;
         private bool _isSugestoesAberto;
         private readonly MapService _mapService;
+        private readonly SearchHistoryService _historyService;
 
+        // Comandos da Interface
         public ICommand BuscarCommand { get; }
         public ICommand SelecionarHistoricoCommand { get; }
-        public ICommand LigarCommand { get; }
         public ICommand SalvarCommand { get; }
-        public ICommand RotasCommand { get; }
+        public ICommand AbrirHistoricoCommand { get; } // NOVO: Comando do botão do relógio
 
         public MainViewModel()
         {
             _mapService = new MapService();
+            _historyService = new SearchHistoryService();
+
             BuscarCommand = new RelayCommand(async (obj) => await ExecutarBusca());
 
-            // Comando para quando o usuário clicar em um item do histórico
             SelecionarHistoricoCommand = new RelayCommand((obj) =>
             {
-                if (obj is string termo)
+                if (obj is LocationModel local)
                 {
-                    TermoBusca = termo;
+                    TermoBusca = local.Logradouro;
                     IsSugestoesAberto = false;
-                    _ = ExecutarBusca(); // Dispara a busca
+                    _ = ExecutarBusca();
                 }
             });
 
-            // AQUI ESTAVA FALTANDO: Ligando os botões aos métodos!
-            LigarCommand = new RelayCommand(ExecutarLigar);
             SalvarCommand = new RelayCommand(async (obj) => await ExecutarSalvar(obj));
-            RotasCommand = new RelayCommand(ExecutarRotas);
+
+            // Inicializa o comando do histórico
+            AbrirHistoricoCommand = new RelayCommand((obj) => ExecutarAbrirHistorico());
+
+            CarregarHistorico();
         }
 
         public string TermoBusca
@@ -56,9 +58,8 @@ namespace GeoDataInsight.Client.ViewModels
                 _termoBusca = value;
                 OnPropertyChanged();
 
-                // Abre as sugestões se o campo não estiver vazio e houver histórico
-                if (HistoricoPesquisas.Any())
-                    IsSugestoesAberto = true;
+                // Abre sugestões apenas se houver texto e algo no histórico
+                IsSugestoesAberto = !string.IsNullOrWhiteSpace(_termoBusca) && HistoricoPesquisas.Any();
             }
         }
 
@@ -69,83 +70,97 @@ namespace GeoDataInsight.Client.ViewModels
         }
 
         public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
-
-        // Guarda os termos já pesquisados
-        public ObservableCollection<string> HistoricoPesquisas { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<LocationModel> HistoricoPesquisas { get; set; } = new ObservableCollection<LocationModel>();
 
         public LocationModel Selecionado
         {
             get => _selecionado;
-            set { _selecionado = value; OnPropertyChanged(); }
+            set
+            {
+                _selecionado = value;
+                OnPropertyChanged();
+            }
         }
 
         private async Task ExecutarBusca()
         {
             if (string.IsNullOrWhiteSpace(TermoBusca)) return;
 
-            IsSugestoesAberto = false; // Fecha o popup
+            IsSugestoesAberto = false;
             Resultados.Clear();
 
-            // Adiciona ao histórico se não existir (limita aos 5 últimos)
-            if (!HistoricoPesquisas.Contains(TermoBusca))
+            try
             {
-                HistoricoPesquisas.Insert(0, TermoBusca);
-                if (HistoricoPesquisas.Count > 5) HistoricoPesquisas.RemoveAt(5);
+                var locaisEncontrados = await _mapService.SearchLocationAsync(TermoBusca);
+
+                foreach (var local in locaisEncontrados)
+                {
+                    Resultados.Add(local);
+                }
+
+                // Salva o primeiro resultado da busca no histórico automaticamente
+                if (locaisEncontrados.Any())
+                {
+                    _historyService.AddToHistory(locaisEncontrados.First());
+                    CarregarHistorico();
+                }
             }
-
-            var locaisEncontrados = await _mapService.SearchLocationAsync(TermoBusca);
-
-            foreach (var local in locaisEncontrados)
+            catch (System.Exception ex)
             {
-                Resultados.Add(local);
+                MessageBox.Show($"Erro na busca: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void ExecutarLigar(object obj)
+        private void ExecutarAbrirHistorico()
         {
-            if (obj is LocationModel local)
+            // 1. Limpa a barra de pesquisa
+            TermoBusca = string.Empty;
+
+            // 2. Limpa a lista de resultados atual da tela
+            Resultados.Clear();
+
+            // 3. Garante que o histórico na memória está atualizado
+            CarregarHistorico();
+
+            // 4. Joga o histórico na lista de resultados para que apareça na interface do usuário
+            foreach (var item in HistoricoPesquisas)
             {
-                // Como não temos o telefone na API, exibimos uma mensagem amigável
-                MessageBox.Show($"Iniciando chamada para a recepção de:\n{local.Logradouro}",
-                                "Discador", MessageBoxButton.OK, MessageBoxImage.Information);
+                Resultados.Add(item);
             }
         }
 
         private async Task ExecutarSalvar(object obj)
         {
-            if (obj is LocationModel local)
+            var local = obj as LocationModel ?? Selecionado;
+
+            if (local != null)
             {
                 try
                 {
                     var firebase = new FirebaseService();
                     await firebase.SalvarNoHistoricoAsync(local);
+                    _historyService.AddToHistory(local);
+                    CarregarHistorico();
 
-                    MessageBox.Show($"{local.Logradouro} salvo com sucesso no Firebase!",
-                                    "Salvo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Registro ID {local.Id} ({local.Logradouro}) salvo no Firebase!",
+                                    "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (System.Exception ex)
                 {
-                    MessageBox.Show($"Erro ao salvar no banco: {ex.Message}",
-                                    "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Erro ao salvar: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
 
-        private void ExecutarRotas(object obj)
+        private void CarregarHistorico()
         {
-            if (obj is LocationModel local)
-            {
-                // Monta o link do Google Maps com a Latitude e Longitude
-                string lat = local.Latitude.ToString(CultureInfo.InvariantCulture);
-                string lon = local.Longitude.ToString(CultureInfo.InvariantCulture);
-                string url = $"http://maps.google.com/?q={lat},{lon}";
+            HistoricoPesquisas.Clear();
 
-                // Pede para o Windows abrir o link no navegador padrão
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                });
+            var historico = _historyService.GetHistory();
+
+            foreach (var item in historico)
+            {
+                HistoricoPesquisas.Add(item);
             }
         }
 
