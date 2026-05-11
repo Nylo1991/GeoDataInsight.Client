@@ -62,23 +62,32 @@ namespace GeoDataInsight.Client.ViewModels
 
         private async Task CarregarDados()
         {
-            var dados = await _firebaseService.GetTodosRegistrosAsync();
-
-            // Limpa a coleção atual ao invés de recriar a variável
-            TodosRegistros.Clear();
-
-            if (dados != null && dados.Any())
+            try
             {
-                _listaOriginal = dados.ToList();
+                var dados = await _firebaseService.GetTodosRegistrosAsync();
 
-                // Popula a ObservableCollection item por item
-                foreach (var item in _listaOriginal)
+                // 👇 Força a atualização ocorrer na Thread principal da Interface (UI Thread) 👇
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TodosRegistros.Add(item);
-                }
-            }
+                    TodosRegistros.Clear();
 
-            FiltroCep = string.Empty; // Limpa o filtro ao recarregar
+                    if (dados != null && dados.Any())
+                    {
+                        _listaOriginal = dados.ToList();
+
+                        foreach (var item in _listaOriginal)
+                        {
+                            TodosRegistros.Add(item);
+                        }
+                    }
+                    FiltroCep = string.Empty;
+                });
+            }
+            catch (System.Exception ex)
+            {
+                // Se der erro de permissão no Firebase ou falta de internet, agora você vai saber!
+                MessageBox.Show($"Erro ao carregar dados do banco: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task ExecutarDeletarLote()

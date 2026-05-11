@@ -1,55 +1,46 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
-using GeoDataInsight.Client.Models;
+using System.Windows.Input;
+
+// Dependências do seu projeto
 using GeoDataInsight.Client.Helpers;
+using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Services;
+using GeoDataInsight.Client.Views; // Adicionado para reconhecer a AdminWindow
 
 namespace GeoDataInsight.Client.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
+        // ==========================================
+        // 1. CAMPOS PRIVADOS (Variáveis internas)
+        // ==========================================
         private string _termoBusca = string.Empty;
         private LocationModel _selecionado;
         private bool _isSugestoesAberto;
+
         private readonly MapService _mapService;
         private readonly SearchHistoryService _historyService;
+        private readonly FirebaseService _firebaseService;
 
-        // Comandos da Interface
+        // ==========================================
+        // 2. COMANDOS (Ações da Interface)
+        // ==========================================
         public ICommand BuscarCommand { get; }
         public ICommand SelecionarHistoricoCommand { get; }
         public ICommand SalvarCommand { get; }
-        public ICommand AbrirHistoricoCommand { get; } // NOVO: Comando do botão do relógio
+        public ICommand AbrirHistoricoCommand { get; }
+        public ICommand DeletarCommand { get; }
+        public ICommand AbrirPainelAdminCommand { get; }
 
-        public MainViewModel()
-        {
-            _mapService = new MapService();
-            _historyService = new SearchHistoryService();
-
-            BuscarCommand = new RelayCommand(async (obj) => await ExecutarBusca());
-
-            SelecionarHistoricoCommand = new RelayCommand((obj) =>
-            {
-                if (obj is LocationModel local)
-                {
-                    TermoBusca = local.Logradouro;
-                    IsSugestoesAberto = false;
-                    _ = ExecutarBusca();
-                }
-            });
-
-            SalvarCommand = new RelayCommand(async (obj) => await ExecutarSalvar(obj));
-
-            // Inicializa o comando do histórico
-            AbrirHistoricoCommand = new RelayCommand((obj) => ExecutarAbrirHistorico());
-
-            CarregarHistorico();
-        }
-
+        // ==========================================
+        // 3. PROPRIEDADES (Dados expostos para a Tela)
+        // ==========================================
         public string TermoBusca
         {
             get => _termoBusca;
@@ -57,7 +48,6 @@ namespace GeoDataInsight.Client.ViewModels
             {
                 _termoBusca = value;
                 OnPropertyChanged();
-
                 // Abre sugestões apenas se houver texto e algo no histórico
                 IsSugestoesAberto = !string.IsNullOrWhiteSpace(_termoBusca) && HistoricoPesquisas.Any();
             }
@@ -69,19 +59,44 @@ namespace GeoDataInsight.Client.ViewModels
             set { _isSugestoesAberto = value; OnPropertyChanged(); }
         }
 
-        public ObservableCollection<LocationModel> Resultados { get; set; } = new ObservableCollection<LocationModel>();
-        public ObservableCollection<LocationModel> HistoricoPesquisas { get; set; } = new ObservableCollection<LocationModel>();
-
         public LocationModel Selecionado
         {
             get => _selecionado;
-            set
-            {
-                _selecionado = value;
-                OnPropertyChanged();
-            }
+            set { _selecionado = value; OnPropertyChanged(); }
         }
 
+        public ObservableCollection<LocationModel> Resultados { get; set; }
+        public ObservableCollection<LocationModel> HistoricoPesquisas { get; set; }
+
+        // ==========================================
+        // 4. CONSTRUTOR (Inicialização)
+        // ==========================================
+        public MainViewModel()
+        {
+            // Instanciando Serviços
+            _mapService = new MapService();
+            _historyService = new SearchHistoryService();
+            _firebaseService = new FirebaseService();
+
+            // Instanciando Coleções
+            Resultados = new ObservableCollection<LocationModel>();
+            HistoricoPesquisas = new ObservableCollection<LocationModel>();
+
+            // Vinculando Comandos aos seus Métodos
+            BuscarCommand = new RelayCommand(async (obj) => await ExecutarBusca());
+            SelecionarHistoricoCommand = new RelayCommand(ExecutarSelecionarHistorico);
+            SalvarCommand = new RelayCommand(async (obj) => await ExecutarSalvar(obj));
+            AbrirHistoricoCommand = new RelayCommand((obj) => ExecutarAbrirHistorico());
+            DeletarCommand = new RelayCommand(async (obj) => await ExecutarDeletar(obj));
+            AbrirPainelAdminCommand = new RelayCommand((obj) => AbrirPainelAdmin());
+
+            // Carregamento Inicial
+            CarregarHistorico();
+        }
+
+        // ==========================================
+        // 5. MÉTODOS DE EXECUÇÃO (Lógica de Negócio)
+        // ==========================================
         private async Task ExecutarBusca()
         {
             if (string.IsNullOrWhiteSpace(TermoBusca)) return;
@@ -105,24 +120,28 @@ namespace GeoDataInsight.Client.ViewModels
                     CarregarHistorico();
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show($"Erro na busca: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+        private void ExecutarSelecionarHistorico(object obj)
+        {
+            if (obj is LocationModel local)
+            {
+                TermoBusca = local.Logradouro;
+                IsSugestoesAberto = false;
+                _ = ExecutarBusca();
+            }
+        }
+
         private void ExecutarAbrirHistorico()
         {
-            // 1. Limpa a barra de pesquisa
             TermoBusca = string.Empty;
-
-            // 2. Limpa a lista de resultados atual da tela
             Resultados.Clear();
-
-            // 3. Garante que o histórico na memória está atualizado
             CarregarHistorico();
 
-            // 4. Joga o histórico na lista de resultados para que apareça na interface do usuário
             foreach (var item in HistoricoPesquisas)
             {
                 Resultados.Add(item);
@@ -137,25 +156,54 @@ namespace GeoDataInsight.Client.ViewModels
             {
                 try
                 {
-                    var firebase = new FirebaseService();
-                    await firebase.SalvarNoHistoricoAsync(local);
+                    string chaveDoFirebase = await _firebaseService.SalvarNoHistoricoAsync(local);
+                    local.Key = chaveDoFirebase;
+
                     _historyService.AddToHistory(local);
                     CarregarHistorico();
 
-                    MessageBox.Show($"Registro ID {local.Id} ({local.Logradouro}) salvo no Firebase!",
-                                    "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Salvo com sucesso! Chave: {chaveDoFirebase}", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     MessageBox.Show($"Erro ao salvar: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
 
+        private async Task ExecutarDeletar(object obj)
+        {
+            var local = obj as LocationModel ?? Selecionado;
+
+            if (local != null && !string.IsNullOrEmpty(local.Key))
+            {
+                try
+                {
+                    await _firebaseService.DeletarDoHistoricoAsync(local.Key);
+                    _historyService.RemoveFromHistory(local);
+
+                    if (HistoricoPesquisas.Contains(local))
+                        HistoricoPesquisas.Remove(local);
+
+                    if (Resultados.Contains(local))
+                        Resultados.Remove(local);
+
+                    MessageBox.Show($"Registro ({local.Logradouro}) deletado do Firebase com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erro ao deletar: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Não foi possível identificar a chave do registro para exclusão. Verifique se o dado veio do Firebase.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         private void CarregarHistorico()
         {
             HistoricoPesquisas.Clear();
-
             var historico = _historyService.GetHistory();
 
             foreach (var item in historico)
@@ -164,8 +212,20 @@ namespace GeoDataInsight.Client.ViewModels
             }
         }
 
+        private void AbrirPainelAdmin()
+        {
+            var adminWindow = new AdminWindow();
+            adminWindow.Show();
+        }
+
+        // ==========================================
+        // 6. EVENTOS (Notificação de Mudança)
+        // ==========================================
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
+
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
 }

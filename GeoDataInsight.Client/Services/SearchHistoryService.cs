@@ -95,5 +95,23 @@ namespace GeoDataInsight.Client.Services
                 Console.WriteLine($"Erro ao salvar histórico: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Remove um item específico do histórico local.
+        /// </summary>
+        public void RemoveFromHistory(LocationModel location)
+        {
+            if (location == null) return;
+
+            var history = GetHistory();
+
+            // Remove o item combinando a Chave (se existir) ou as Coordenadas
+            history.RemoveAll(x =>
+                (!string.IsNullOrEmpty(x.Key) && x.Key == location.Key) ||
+                (x.Latitude == location.Latitude && x.Longitude == location.Longitude));
+
+            // Salva o histórico atualizado (sem o item deletado) de volta no arquivo
+            SalvarNoArquivo(history);
+        }
     }
 }

@@ -8,8 +8,7 @@ namespace GeoDataInsight.Client.Views
         public AdminWindow()
         {
             InitializeComponent();
-
-            // Isso conecta a View ao ViewModel! Sem isso, a tela fica vazia.
+            // 👇 ESSA LINHA É OBRIGATÓRIA PARA OS DADOS APARECEREM 👇
             this.DataContext = new AdminViewModel();
         }
     }
