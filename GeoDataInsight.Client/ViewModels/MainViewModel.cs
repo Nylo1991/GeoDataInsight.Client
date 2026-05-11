@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
+
 // Dependências do seu projeto
 using GeoDataInsight.Client.Helpers;
 using GeoDataInsight.Client.Models;
@@ -27,6 +28,7 @@ namespace GeoDataInsight.Client.ViewModels
         private readonly MapService _mapService;
         private readonly SearchHistoryService _historyService;
         private readonly FirebaseService _firebaseService;
+        private System.Windows.Threading.DispatcherTimer _statusTimer;
 
         // ==========================================
         // 2. COMANDOS (Ações da Interface)
@@ -77,6 +79,8 @@ namespace GeoDataInsight.Client.ViewModels
             _mapService = new MapService();
             _historyService = new SearchHistoryService();
             _firebaseService = new FirebaseService();
+            _ = VerificarSaudeApi();
+
 
             // Instanciando Coleções
             Resultados = new ObservableCollection<LocationModel>();
@@ -226,6 +230,45 @@ namespace GeoDataInsight.Client.ViewModels
         protected void OnPropertyChanged([CallerMemberName] string name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private string _apiStatusText = "Verificando...";
+        public string ApiStatusText
+        {
+            get => _apiStatusText;
+            set { _apiStatusText = value; OnPropertyChanged(); }
+        }
+
+        private string _apiStatusColor = "#94A3B8"; // Cinza inicial
+        public string ApiStatusColor
+        {
+            get => _apiStatusColor;
+            set { _apiStatusColor = value; OnPropertyChanged(); }
+        }
+
+        private void IniciarMonitoramentoStatus()
+        {
+            _statusTimer = new System.Windows.Threading.DispatcherTimer();
+            _statusTimer.Interval = TimeSpan.FromSeconds(30);
+            _statusTimer.Tick += async (s, e) => await VerificarSaudeApi();
+            _statusTimer.Start();
+        }
+
+        public async Task VerificarSaudeApi()
+        {
+            // Tenta conectar usando o método que refatoramos no FirebaseService
+            bool estaOnline = await _firebaseService.TesteConexaoAsync();
+
+            if (estaOnline)
+            {
+                ApiStatusText = "API Online";
+                ApiStatusColor = "#10B981"; // Verde
+            }
+            else
+            {
+                ApiStatusText = "API Offline";
+                ApiStatusColor = "#EF4444"; // Vermelho
+            }
         }
     }
 }

@@ -34,6 +34,13 @@ namespace GeoDataInsight.Client.ViewModels
 
         #region Propriedades dos Filtros Avançados
 
+        private bool _mostrarAvisoVazio;
+        public bool MostrarAvisoVazio
+        {
+            get => _mostrarAvisoVazio;
+            set { _mostrarAvisoVazio = value; OnPropertyChanged(); }
+        }
+
         public bool FiltrosAtivos
         {
             get => _filtrosAtivos;
@@ -104,39 +111,50 @@ namespace GeoDataInsight.Client.ViewModels
 
         private void AplicarFiltro()
         {
-            if (TodosRegistros == null) return;
+            if (TodosRegistros == null || _listaOriginal == null) return;
+
             TodosRegistros.Clear();
 
-            // Se o usuário desabilitou os filtros no botão, mostra tudo
+            // 1. Se os filtros estiverem desligados, mostra a lista completa
             if (!FiltrosAtivos)
             {
                 foreach (var item in _listaOriginal) TodosRegistros.Add(item);
+                MostrarAvisoVazio = !TodosRegistros.Any(); // Avisa se o banco estiver 100% vazio
                 return;
             }
 
-            // Lógica de Filtros Combinados (LINQ)
+            // 2. Lógica de Filtros Combinados (LINQ)
             var consulta = _listaOriginal.AsQueryable();
 
+            // Filtro por CEP (Removendo traços para busca flexível)
             if (!string.IsNullOrWhiteSpace(FiltroCep))
             {
                 string cepBusca = FiltroCep.Replace("-", "");
                 consulta = consulta.Where(x => x.Cep != null && x.Cep.Replace("-", "").Contains(cepBusca));
             }
 
+            // Filtro por ID
             if (!string.IsNullOrWhiteSpace(FiltroId))
             {
                 consulta = consulta.Where(x => x.Id.ToString().Contains(FiltroId));
             }
 
+            // Filtro por Data
             if (FiltroData.HasValue)
             {
                 consulta = consulta.Where(x => x.Timestamp.Date == FiltroData.Value.Date);
             }
 
-            foreach (var item in consulta.ToList())
+            // 3. Executa a filtragem e preenche a lista da interface
+            var resultado = consulta.ToList();
+            foreach (var item in resultado)
             {
                 TodosRegistros.Add(item);
             }
+
+            // 4. A VALIDAÇÃO QUE FALTAVA: 
+            // Se a consulta não retornou nada, mas o usuário digitou algo, ativa o aviso.
+            MostrarAvisoVazio = !TodosRegistros.Any();
         }
 
         private async Task ExecutarDeletarLote()
@@ -194,5 +212,7 @@ namespace GeoDataInsight.Client.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        
     }
 }

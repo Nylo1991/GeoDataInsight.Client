@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Firebase.Database;
 using Firebase.Database.Query;
@@ -10,69 +11,65 @@ namespace GeoDataInsight.Client.Services
 {
     public class FirebaseService
     {
-        // 👇 COLOQUE O LINK DO SEU FIREBASE AQUI 👇
-        private readonly string FireBaseUrl = "https://geosquadexplorer-default-rtdb.firebaseio.com/";
+        private readonly string _baseUrl = "https://geosquadexplorer-default-rtdb.firebaseio.com/";
         private readonly FirebaseClient _client;
+        private readonly HttpClient _httpClient;
 
         public FirebaseService()
         {
-            _client = new FirebaseClient(FireBaseUrl);
+            _client = new FirebaseClient(_baseUrl);
+            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
         }
 
-        public async Task DeletarDoHistoricoAsync(string key)
+        // TESTE DE CONEXÃO: Rápido e eficiente
+        public async Task<bool> TesteConexaoAsync()
         {
             try
             {
-                // O método DeleteAsync() remove o nó correspondente à chave fornecida
-                await _client
-                    .Child("HistoricoBuscas")
-                    .Child(key)
-                    .DeleteAsync();
+                var response = await _httpClient.GetAsync($"{_baseUrl}.json?shallow=true");
+                return response.IsSuccessStatusCode;
             }
-            catch (Exception ex)
+            catch
             {
-                // Debug para caso ocorra erro de permissão ou conexão
-                System.Diagnostics.Debug.WriteLine($"Erro ao deletar: {ex.Message}");
-                throw;
+                return false;
             }
         }
 
+        // BUSCAR TODOS: Mapeamento limpo
+        public async Task<List<LocationModel>> GetTodosRegistrosAsync()
+        {
+            try
+            {
+                var registros = await _client.Child("HistoricoBuscas").OnceAsync<LocationModel>();
+                return registros.Select(item =>
+                {
+                    var model = item.Object;
+                    model.Key = item.Key; // Importante para deletar depois
+                    return model;
+                }).ToList();
+            }
+            catch { return new List<LocationModel>(); }
+        }
+
+        // SALVAR
         public async Task<string> SalvarNoHistoricoAsync(LocationModel local)
         {
-            // Realiza o post e armazena o resultado em uma variável
-            var resultado = await _client
-                .Child("HistoricoBuscas")
-                .PostAsync(local);
-
-            // Retorna a Key (chave única) que o Firebase acabou de criar
+            var resultado = await _client.Child("HistoricoBuscas").PostAsync(local);
             return resultado.Key;
         }
 
-        public async Task<List<LocationModel>> GetTodosRegistrosAsync()
+        // DELETAR ÚNICO
+        public async Task DeletarDoHistoricoAsync(string key)
         {
-            var registros = await _client
-                .Child("HistoricoBuscas")
-                .OnceAsync<LocationModel>();
-
-            return registros.Select(item => new LocationModel
-            {
-                Key = item.Key,
-                Logradouro = item.Object.Logradouro,
-                Latitude = item.Object.Latitude,
-                Longitude = item.Object.Longitude,
-                Timestamp = item.Object.Timestamp,
-                Cep = item.Object.Cep,
-                Id = item.Object.Id // Se você tiver esse campo
-            }).ToList();
+            if (string.IsNullOrEmpty(key)) return;
+            await _client.Child("HistoricoBuscas").Child(key).DeleteAsync();
         }
 
+        // DELETAR EM LOTE (Otimizado)
         public async Task DeletarEmLoteAsync(IEnumerable<string> keys)
         {
-            var tarefas = keys.Select(key =>
-                _client.Child("HistoricoBuscas").Child(key).DeleteAsync());
-
-            await Task.WhenAll(tarefas); // Executa todas as exclusões em paralelo
+            var tarefas = keys.Select(key => DeletarDoHistoricoAsync(key));
+            await Task.WhenAll(tarefas);
         }
-
     }
 }

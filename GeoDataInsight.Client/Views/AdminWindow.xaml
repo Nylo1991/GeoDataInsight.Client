@@ -6,6 +6,8 @@
         FontFamily="Segoe UI Variable, Segoe UI" Background="#F8FAFC">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <Style x:Key="FilterCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
             <Setter Property="CornerRadius" Value="12"/>
@@ -79,31 +81,40 @@
         </Border>
 
         <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="10">
-            <DataGrid ItemsSource="{Binding TodosRegistros}" AutoGenerateColumns="False" CanUserAddRows="False">
-                <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40">
-                        <DataGridCheckBoxColumn.ElementStyle>
-                            <Style TargetType="CheckBox">
-                                <Setter Property="HorizontalAlignment" Value="Center"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
-                            </Style>
-                        </DataGridCheckBoxColumn.ElementStyle>
-                    </DataGridCheckBoxColumn>
+            <Grid>
+                <DataGrid ItemsSource="{Binding TodosRegistros}" AutoGenerateColumns="False" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40">
+                            <DataGridCheckBoxColumn.ElementStyle>
+                                <Style TargetType="CheckBox">
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridCheckBoxColumn.ElementStyle>
+                        </DataGridCheckBoxColumn>
 
-                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="110" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="110" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*" IsReadOnly="True"/>
 
-                    <DataGridTemplateColumn Header="DATA E HORA" Width="180">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Timestamp, StringFormat='dd MMM yyyy - HH:mm'}" 
-                                           VerticalAlignment="Center" Foreground="#475569"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+                        <DataGridTemplateColumn Header="DATA E HORA" Width="180">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Timestamp, StringFormat='dd MMM yyyy - HH:mm'}" 
+                                               VerticalAlignment="Center" Foreground="#475569"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
+                            Visibility="{Binding MostrarAvisoVazio, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="Nenhum registro encontrado" FontSize="20" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Tente mudar os filtros ou verifique se o banco possui dados." FontSize="14" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <Grid Grid.Row="3" Margin="0,20,0,0">

@@ -1,12 +1,38 @@
 ﻿<Window x:Class="GeoDataInsight.Client.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+        mc:Ignorable="d"
         Title="GeoDataInsight - Inteligência Geográfica" 
         Height="768" Width="1366"
         WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable, Segoe UI" 
         Background="#F3F4F6">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type ScrollViewer}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                        <Grid>
+                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" CanContentScroll="{TemplateBinding CanContentScroll}"/>
+                            <ScrollBar x:Name="PART_VerticalScrollBar" 
+                                       HorizontalAlignment="Right" 
+                                       Maximum="{TemplateBinding ScrollableHeight}" 
+                                       Minimum="0" 
+                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" 
+                                       Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                       Width="6"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <mapsui:MapControl x:Name="mapControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0"/>
@@ -52,14 +78,22 @@
                 <StackPanel Grid.Row="0" Margin="24,0,24,20">
                     <TextBlock Text="GeoDataInsight" FontSize="24" FontWeight="Black" Foreground="#111827"/>
                     <TextBlock Text="Inteligência Geográfica Global" FontSize="14" Foreground="#6B7280" Margin="0,4,0,0" FontWeight="Medium"/>
+
+                    <Border Background="#F9FAFB" CornerRadius="12" Padding="8,4" HorizontalAlignment="Left" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{Binding ApiStatusColor}" Margin="4,0,8,0">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="{Binding ApiStatusColor}" Opacity="0.7"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                            <TextBlock Text="{Binding ApiStatusText}" FontSize="11" FontWeight="Bold" Foreground="#64748B" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <Grid Grid.Row="1" Margin="24,0,24,0">
                     <Border x:Name="SearchBorder" Background="#F9FAFB" CornerRadius="24" Height="48" 
                             BorderBrush="#D1D5DB" BorderThickness="1">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.05" Color="#000000" Direction="270"/>
-                        </Border.Effect>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -68,13 +102,12 @@
                             </Grid.ColumnDefinitions>
 
                             <Button Grid.Column="0" Command="{Binding AbrirHistoricoCommand}" 
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand" 
-                                    ToolTip="Ver histórico de buscas" Margin="8,0,0,0" Width="40">
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0" Width="40">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="HistBorder" Background="Transparent" CornerRadius="20">
                                             <Path Data="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L8.79,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3M12,8V13L16.28,15.54L17,14.33L13.5,12.25V8H12Z" 
-                                                  Fill="#9CA3AF" Width="20" Height="20" Stretch="Uniform"/>
+                                                  Fill="#9CA3AF" Width="20" Height="20" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
@@ -94,8 +127,7 @@
                             </TextBox>
 
                             <Button Grid.Column="2" Command="{Binding BuscarCommand}" 
-                                    Background="#3B82F6" Foreground="White" BorderThickness="0" 
-                                    Width="40" Height="40" Cursor="Hand" Margin="0,0,4,0">
+                                    Background="#3B82F6" Width="40" Height="40" Cursor="Hand" Margin="0,0,4,0">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
                                         <Border x:Name="BtnBorder" Background="{TemplateBinding Background}" CornerRadius="20">
@@ -116,14 +148,11 @@
 
                 <ListBox Grid.Row="2" ItemsSource="{Binding Resultados}" SelectedItem="{Binding Selecionado}" 
                          BorderThickness="0" Background="Transparent" Margin="24,20,24,0" 
-                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
 
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="0,0,0,12"/>
-                            <Setter Property="Cursor" Value="Hand"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
@@ -137,11 +166,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Border x:Name="ItemBorder" Background="#FFFFFF" CornerRadius="12" Padding="16" 
-                                    BorderBrush="#E5E7EB" BorderThickness="1">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.05" Color="#000000"/>
-                                </Border.Effect>
-
+                                    BorderBrush="#E5E7EB" BorderThickness="1" Margin="0,0,0,12">
                                 <StackPanel>
                                     <Grid Background="Transparent">
                                         <Grid.ColumnDefinitions>
@@ -153,30 +178,24 @@
                                               Fill="#EF4444" Width="20" Height="24" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
                                         <StackPanel Grid.Column="1">
-                                            <TextBlock Text="{Binding Logradouro}" FontWeight="Bold" FontSize="15" Foreground="#111827" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Logradouro}" FontWeight="Bold" FontSize="15" Foreground="#111827" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding Bairro}" FontSize="13" Foreground="#3B82F6" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Grid>
 
                                     <StackPanel x:Name="DetailsPanel" Visibility="Collapsed" Margin="0,16,0,0">
                                         <Separator Background="#F3F4F6" Margin="0,0,0,16"/>
-
                                         <UniformGrid Columns="2">
                                             <StackPanel Margin="0,0,10,0">
-                                                <TextBlock Text="CÓD. POSTAL / REF" FontSize="10" FontWeight="Black" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                                <TextBlock Text="CÓD. POSTAL" FontSize="10" FontWeight="Black" Foreground="#9CA3AF"/>
                                                 <TextBlock Text="{Binding Cep}" Foreground="#374151" FontWeight="Medium" Margin="0,0,0,10"/>
-
-                                                <TextBlock Text="NÚMERO" FontSize="10" FontWeight="Black" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <TextBlock Text="{Binding Numero}" Margin="0,0,0,10" Foreground="#374151" FontWeight="Medium"/>
+                                                <TextBlock Text="NÚMERO" FontSize="10" FontWeight="Black" Foreground="#9CA3AF"/>
+                                                <TextBlock Text="{Binding Numero}" Foreground="#374151" FontWeight="Medium"/>
                                             </StackPanel>
-
                                             <StackPanel>
-                                                <TextBlock Text="COORDENADAS" FontSize="10" FontWeight="Black" Foreground="#9CA3AF" Margin="0,0,0,2"/>
+                                                <TextBlock Text="COORDENADAS" FontSize="10" FontWeight="Black" Foreground="#9CA3AF"/>
                                                 <TextBlock Text="{Binding Latitude, StringFormat='Lat: \{0\}'}" FontSize="11" Foreground="#374151"/>
                                                 <TextBlock Text="{Binding Longitude, StringFormat='Long: \{0\}'}" FontSize="11" Foreground="#374151" Margin="0,0,0,10"/>
-
-                                                <TextBlock Text="DATA" FontSize="10" FontWeight="Black" Foreground="#9CA3AF" Margin="0,0,0,2"/>
-                                                <TextBlock Text="{Binding Timestamp, StringFormat='\{0:dd/MM/yyyy HH:mm\}'}" FontSize="11" Foreground="#374151"/>
                                             </StackPanel>
                                         </UniformGrid>
 
@@ -187,52 +206,24 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <Border Grid.Column="0" Background="#F9FAFB" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Id, StringFormat='ID: \{0\}'}" FontSize="9" Foreground="#9CA3AF" FontWeight="Bold"/>
-                                            </Border>
-
-                                            <Button Grid.Column="1" 
-                                                    Command="{Binding DataContext.DeletarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="#EF4444" Foreground="White" BorderThickness="0" 
-                                                    Padding="12,6" Cursor="Hand" FontWeight="Bold" FontSize="12" Margin="0,0,8,0">
+                                            <Button Grid.Column="1" Command="{Binding DataContext.DeletarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" Background="#EF4444" Margin="0,0,8,0">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="DelBorder" Background="{TemplateBinding Background}" CornerRadius="6">
-                                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-                                                                <Path Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" 
-                                                                      Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                                                                <TextBlock Text="Deletar"/>
-                                                            </StackPanel>
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="12,6">
+                                                            <TextBlock Text="Deletar" Foreground="White" FontWeight="Bold" FontSize="12"/>
                                                         </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="DelBorder" Property="Opacity" Value="0.85"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
 
-                                            <Button Grid.Column="2" 
-                                                    Command="{Binding DataContext.SalvarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="#10B981" Foreground="White" BorderThickness="0" 
-                                                    Padding="12,6" Cursor="Hand" FontWeight="Bold" FontSize="12">
+                                            <Button Grid.Column="2" Command="{Binding DataContext.SalvarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" Background="#10B981">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="SaveBorder" Background="{TemplateBinding Background}" CornerRadius="6">
-                                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-                                                                <Path Data="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z" 
-                                                                      Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0"/>
-                                                                <TextBlock Text="Salvar no Banco"/>
-                                                            </StackPanel>
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="12,6">
+                                                            <TextBlock Text="Salvar" Foreground="White" FontWeight="Bold" FontSize="12"/>
                                                         </Border>
-                                                        <ControlTemplate.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter TargetName="SaveBorder" Property="Opacity" Value="0.85"/>
-                                                            </Trigger>
-                                                        </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
@@ -242,10 +233,6 @@
                             </Border>
 
                             <DataTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ItemBorder" Property="Background" Value="#F9FAFB"/>
-                                    <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#D1D5DB"/>
-                                </Trigger>
                                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
                                     <Setter TargetName="DetailsPanel" Property="Visibility" Value="Visible"/>
                                     <Setter TargetName="ItemBorder" Property="BorderBrush" Value="#3B82F6"/>
