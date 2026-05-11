@@ -65,5 +65,14 @@ namespace GeoDataInsight.Client.Services
                 Id = item.Object.Id // Se você tiver esse campo
             }).ToList();
         }
+
+        public async Task DeletarEmLoteAsync(IEnumerable<string> keys)
+        {
+            var tarefas = keys.Select(key =>
+                _client.Child("HistoricoBuscas").Child(key).DeleteAsync());
+
+            await Task.WhenAll(tarefas); // Executa todas as exclusões em paralelo
+        }
+
     }
 }
