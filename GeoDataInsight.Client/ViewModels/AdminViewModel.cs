@@ -1,6 +1,7 @@
 ﻿using GeoDataInsight.Client.Helpers;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Services;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,12 +16,14 @@ namespace GeoDataInsight.Client.ViewModels
     public class AdminViewModel : INotifyPropertyChanged
     {
         private readonly FirebaseService _firebaseService;
-
-        // Usamos uma lista original para guardar os dados sem filtro
         private List<LocationModel> _listaOriginal;
         private ObservableCollection<LocationModel> _todosRegistros;
 
+        // Propriedades de Filtro
         private string _filtroCep;
+        private string _filtroId;
+        private DateTime? _filtroData;
+        private bool _filtrosAtivos;
         private bool _todosSelecionados;
 
         public ObservableCollection<LocationModel> TodosRegistros
@@ -29,34 +32,55 @@ namespace GeoDataInsight.Client.ViewModels
             set { _todosRegistros = value; OnPropertyChanged(); }
         }
 
-        public string FiltroCep
+        #region Propriedades dos Filtros Avançados
+
+        public bool FiltrosAtivos
         {
-            get => _filtroCep;
+            get => _filtrosAtivos;
             set
             {
-                _filtroCep = value;
+                _filtrosAtivos = value;
                 OnPropertyChanged();
-                AplicarFiltro(); // Filtra a lista automaticamente ao digitar
+                AplicarFiltro(); // Reaplica ou limpa filtros ao alternar o switch
             }
         }
 
+        public string FiltroCep
+        {
+            get => _filtroCep;
+            set { _filtroCep = value; OnPropertyChanged(); AplicarFiltro(); }
+        }
+
+        public string FiltroId
+        {
+            get => _filtroId;
+            set { _filtroId = value; OnPropertyChanged(); AplicarFiltro(); }
+        }
+
+        public DateTime? FiltroData
+        {
+            get => _filtroData;
+            set { _filtroData = value; OnPropertyChanged(); AplicarFiltro(); }
+        }
+
+        #endregion
+
         public ICommand DeletarSelecionadosCommand { get; }
         public ICommand CarregarDadosCommand { get; }
-        public ICommand SelecionarTodosCommand { get; } // Comando do CheckBox principal
+        public ICommand SelecionarTodosCommand { get; }
+        public ICommand LimparFiltrosCommand { get; }
 
         public AdminViewModel()
         {
             _firebaseService = new FirebaseService();
-
-            // Inicializa a coleção apenas UMA vez no construtor
             TodosRegistros = new ObservableCollection<LocationModel>();
             _listaOriginal = new List<LocationModel>();
 
             DeletarSelecionadosCommand = new RelayCommand(async (obj) => await ExecutarDeletarLote());
             CarregarDadosCommand = new RelayCommand(async (obj) => await CarregarDados());
             SelecionarTodosCommand = new RelayCommand((obj) => AlternarSelecaoTodos());
+            LimparFiltrosCommand = new RelayCommand((obj) => ResetarFiltros());
 
-            // Carrega os dados assim que abrir o painel
             _ = CarregarDados();
         }
 
@@ -66,27 +90,52 @@ namespace GeoDataInsight.Client.ViewModels
             {
                 var dados = await _firebaseService.GetTodosRegistrosAsync();
 
-                // 👇 Força a atualização ocorrer na Thread principal da Interface (UI Thread) 👇
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TodosRegistros.Clear();
-
-                    if (dados != null && dados.Any())
-                    {
-                        _listaOriginal = dados.ToList();
-
-                        foreach (var item in _listaOriginal)
-                        {
-                            TodosRegistros.Add(item);
-                        }
-                    }
-                    FiltroCep = string.Empty;
+                    _listaOriginal = dados ?? new List<LocationModel>();
+                    AplicarFiltro(); // Preenche a tela respeitando filtros atuais
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                // Se der erro de permissão no Firebase ou falta de internet, agora você vai saber!
-                MessageBox.Show($"Erro ao carregar dados do banco: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Erro ao carregar dados: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void AplicarFiltro()
+        {
+            if (TodosRegistros == null) return;
+            TodosRegistros.Clear();
+
+            // Se o usuário desabilitou os filtros no botão, mostra tudo
+            if (!FiltrosAtivos)
+            {
+                foreach (var item in _listaOriginal) TodosRegistros.Add(item);
+                return;
+            }
+
+            // Lógica de Filtros Combinados (LINQ)
+            var consulta = _listaOriginal.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(FiltroCep))
+            {
+                string cepBusca = FiltroCep.Replace("-", "");
+                consulta = consulta.Where(x => x.Cep != null && x.Cep.Replace("-", "").Contains(cepBusca));
+            }
+
+            if (!string.IsNullOrWhiteSpace(FiltroId))
+            {
+                consulta = consulta.Where(x => x.Id.ToString().Contains(FiltroId));
+            }
+
+            if (FiltroData.HasValue)
+            {
+                consulta = consulta.Where(x => x.Timestamp.Date == FiltroData.Value.Date);
+            }
+
+            foreach (var item in consulta.ToList())
+            {
+                TodosRegistros.Add(item);
             }
         }
 
@@ -96,23 +145,32 @@ namespace GeoDataInsight.Client.ViewModels
 
             if (!selecionados.Any())
             {
-                MessageBox.Show("Nenhum item selecionado para exclusão.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Selecione pelo menos um registro para excluir.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // Pede confirmação antes de apagar
-            var confirmacao = MessageBox.Show($"Tem certeza que deseja excluir {selecionados.Count} registro(s) do Firebase?",
-                                              "Confirmação", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var confirmacao = MessageBox.Show(
+                $"OPERAÇÃO IRREVERSÍVEL!\n\nDeseja excluir {selecionados.Count} registro(s) permanentemente?",
+                "Confirmação de Segurança", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirmacao == MessageBoxResult.Yes)
             {
-                foreach (var item in selecionados)
+                try
                 {
-                    await _firebaseService.DeletarDoHistoricoAsync(item.Key);
-                    TodosRegistros.Remove(item);
-                    _listaOriginal.Remove(item); // Remove do backup de dados também
+                    // Mostra que está processando (opcional: adicionar uma flag IsBusy)
+                    foreach (var item in selecionados)
+                    {
+                        await _firebaseService.DeletarDoHistoricoAsync(item.Key);
+                        _listaOriginal.Remove(item);
+                        TodosRegistros.Remove(item);
+                    }
+
+                    MessageBox.Show("Registros removidos com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-                MessageBox.Show("Itens deletados com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erro durante a exclusão: {ex.Message}", "Falha Crítica", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -125,31 +183,12 @@ namespace GeoDataInsight.Client.ViewModels
             }
         }
 
-        private void AplicarFiltro()
+        private void ResetarFiltros()
         {
-            TodosRegistros.Clear();
-
-            if (string.IsNullOrWhiteSpace(FiltroCep))
-            {
-                // Se a caixa de pesquisa estiver vazia, restaura os dados originais
-                foreach (var item in _listaOriginal)
-                {
-                    TodosRegistros.Add(item);
-                }
-            }
-            else
-            {
-                // Filtra pelo CEP (ignorando o traço "-" caso o usuário digite com ou sem)
-                var listaFiltrada = _listaOriginal.Where(x =>
-                    !string.IsNullOrEmpty(x.Cep) &&
-                    x.Cep.Replace("-", "").Contains(FiltroCep.Replace("-", ""))
-                ).ToList();
-
-                foreach (var item in listaFiltrada)
-                {
-                    TodosRegistros.Add(item);
-                }
-            }
+            FiltroCep = string.Empty;
+            FiltroId = string.Empty;
+            FiltroData = null;
+            AplicarFiltro();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
