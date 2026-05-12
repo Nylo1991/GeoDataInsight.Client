@@ -1,35 +1,35 @@
-﻿using Newtonsoft.Json;
+﻿using Google.Cloud.Firestore;
+using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace GeoDataInsight.Client.Models
 {
+    [FirestoreData]
     public class LocationModel : INotifyPropertyChanged
     {
-        // ID original (mantenha intacto para uso interno do banco)
-        public int Id { get; set; }
+        [FirestoreProperty] public string Id { get; set; } = string.Empty;
+        [FirestoreProperty] public string Logradouro { get; set; } = string.Empty;
+        [FirestoreProperty] public string Numero { get; set; } = string.Empty;
+        [FirestoreProperty] public string Bairro { get; set; } = string.Empty;
+        [FirestoreProperty] public string Cep { get; set; } = string.Empty;
+        [FirestoreProperty] public double Latitude { get; set; }
+        [FirestoreProperty] public double Longitude { get; set; }
+        [FirestoreProperty] public DateTime Timestamp { get; set; }
 
-        // NOVA PROPRIEDADE: Apenas para exibição sequencial na interface
+        [JsonIgnore] public string Key { get; set; } = string.Empty;
+
+        // Campos privados (Backing Fields) necessários para evitar o CS0103
         private int _displayId;
+        private bool _isSelected;
+
         [JsonIgnore]
         public int DisplayId
         {
             get => _displayId;
             set { _displayId = value; OnPropertyChanged(); }
         }
-
-        public string Logradouro { get; set; } = string.Empty;
-        public string Numero { get; set; } = string.Empty;
-        public string Bairro { get; set; } = string.Empty;
-        public string Cep { get; set; } = string.Empty;
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string Key { get; set; }
-        public string Nome { get; set; }
-
-        private bool _isSelected;
 
         [JsonIgnore]
         public bool IsSelected
@@ -39,10 +39,7 @@ namespace GeoDataInsight.Client.Models
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
+        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
     }
 }

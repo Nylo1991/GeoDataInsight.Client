@@ -1,4 +1,5 @@
-﻿using GeoDataInsight.Client.Helpers;
+﻿using GeoDataInsight.Client.DTO;
+using GeoDataInsight.Client.Helpers;
 using GeoDataInsight.Client.Models;
 using GeoDataInsight.Client.Services;
 using System;
@@ -10,6 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using GeoDataInsight.Client.DTO;
+
 
 namespace GeoDataInsight.Client.ViewModels
 {
@@ -20,17 +23,35 @@ namespace GeoDataInsight.Client.ViewModels
         private ObservableCollection<LocationModel> _todosRegistros;
 
         // Propriedades de Filtro
+
         private string _filtroCep;
         private string _filtroId;
         private DateTime? _filtroData;
         private bool _filtrosAtivos;
         private bool _todosSelecionados;
         private bool _mostrarAvisoVazio;
+        private readonly Squad2IntegrationService _squad2Service;
+        private LocationModel _selectedLocation;
+
+       
+
 
         public ObservableCollection<LocationModel> TodosRegistros
         {
             get => _todosRegistros;
             set { _todosRegistros = value; OnPropertyChanged(); }
+        }
+
+
+        public LocationModel SelectedLocation
+        {
+            get => _selectedLocation;
+            set
+            {
+                _selectedLocation = value;
+                OnPropertyChanged();
+                // Isso fará a UI reagir instantaneamente
+            }
         }
 
         public bool MostrarAvisoVazio
@@ -68,18 +89,24 @@ namespace GeoDataInsight.Client.ViewModels
         public ICommand CarregarDadosCommand { get; }
         public ICommand SelecionarTodosCommand { get; }
         public ICommand LimparFiltrosCommand { get; }
+        public ICommand SincronizarComSquad2Command { get; }
 
         public AdminViewModel()
         {
             _firebaseService = new FirebaseService();
             TodosRegistros = new ObservableCollection<LocationModel>();
             _listaOriginal = new List<LocationModel>();
+            _firebaseService = new FirebaseService();
+            _squad2Service = new Squad2IntegrationService();
 
             // Inicialização dos Comandos
             DeletarSelecionadosCommand = new RelayCommand(async (obj) => await ExecutarDeletarLote());
             CarregarDadosCommand = new RelayCommand(async (obj) => await CarregarDados());
             SelecionarTodosCommand = new RelayCommand((obj) => AlternarSelecaoTodos());
             LimparFiltrosCommand = new RelayCommand((obj) => ResetarFiltros());
+            SincronizarComSquad2Command = new RelayCommand(async (obj) => await ExecutarSincronizacaoSquad2()
+
+            );
 
             _ = CarregarDados();
         }
@@ -167,6 +194,48 @@ namespace GeoDataInsight.Client.ViewModels
             }
         }
 
+
+        private async Task ExecutarSincronizacaoSquad2()
+        {
+            // Filtra os itens selecionados no DataGrid
+            var selecionados = TodosRegistros.Where(x => x.IsSelected).ToList();
+
+            if (!selecionados.Any())
+            {
+                MessageBox.Show("Selecione ao menos um registro.");
+                return;
+            }
+
+            var service = new Squad2IntegrationService();
+            int sucessos = 0;
+            int falhas = 0;
+
+            foreach (var local in selecionados)
+            {
+                var request = new MapasApiRequest
+                {
+                    Id = local.Id,
+                    Logradouro = local.Logradouro,
+                    Numero = local.Numero,
+                    Bairro = local.Bairro,
+                    Cep = local.Cep,
+                    Latitude = local.Latitude,
+                    Longitude = local.Longitude,
+                    // Garante que o servidor aceite a data
+                    Timestamp = local.Timestamp.ToUniversalTime()
+                };
+
+                // Se o passo 1 acima foi feito, _squad2Service não será mais null
+                bool ok = await _squad2Service.EnviarLocalizacaoAsync(request);
+
+                if (ok) sucessos++;
+                else falhas++;
+            }
+
+            MessageBox.Show($"Sincronização concluída!\nSucessos: {sucessos}\nFalhas: {falhas}", "Resultado Squad 2");
+        }
+
+
         private void AlternarSelecaoTodos()
         {
             _todosSelecionados = !_todosSelecionados;
@@ -190,5 +259,36 @@ namespace GeoDataInsight.Client.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public async Task SincronizarDadosComSquad2()
+        {
+            var service = new Squad2IntegrationService();
+
+            // Supondo que 'MeusDadosLocais' venha do seu banco de dados local
+            var meusDadosLocais = _listaOriginal;
+
+            foreach (var local in meusDadosLocais)
+            {
+                var request = new MapasApiRequest
+                {
+                    Logradouro = local.Logradouro, // 'L' maiúsculo
+                    Numero = local.Numero,         // 'N' maiúsculo
+                    Bairro = local.Bairro,         // 'B' maiúsculo
+                    Cep = local.Cep,               // 'C' maiúsculo
+                    Latitude = local.Latitude,     // 'L' maiúsculo
+                    Longitude = local.Longitude    // 'L' maiúsculo
+                };
+
+                bool ok = await service.EnviarLocalizacaoAsync(request);
+
+                if (ok)
+                {
+                    // Atualize seu banco local marcando que este registro já foi enviado
+                }
+            }
+
+
+
+        }
     }
 }

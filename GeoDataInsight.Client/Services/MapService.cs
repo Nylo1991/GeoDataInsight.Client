@@ -44,7 +44,7 @@ namespace GeoDataInsight.Client.Services
 
                     listaFinal.Add(new LocationModel
                     {
-                        Id = contadorId++,
+                        Id = "",
                         Logradouro = addr?.GetNomeLocal() ?? item.display_name.Split(',')[0],
                         Numero = addr?.house_number ?? "S/N",
 

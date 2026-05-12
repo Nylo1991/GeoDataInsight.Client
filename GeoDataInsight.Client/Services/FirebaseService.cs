@@ -47,19 +47,22 @@ namespace GeoDataInsight.Client.Services
                 return registros.Select(item =>
                 {
                     var model = item.Object;
-                    model.Key = item.Key;
+                    if (model != null)
+                    {
+                        model.Key = item.Key; // Preenche a chave interna do Firebase
+                    }
                     return model;
-                }).ToList();
+                }).Where(m => m != null).ToList();
             }
             catch { return new List<LocationModel>(); }
         }
 
         public async Task<string> SalvarNoHistoricoAsync(LocationModel local)
         {
-            // Garante que o ID seja gerado
-            local.Id = await GetProximoIdAsync();
+            // O retorno de GetProximoIdAsync agora deve ser convertido para string
+            int proximoId = await GetProximoIdAsync();
+            local.Id = proximoId.ToString(); 
 
-            // Boa prática: Garante que o registro tenha data/hora se não foi definida
             if (local.Timestamp == default)
                 local.Timestamp = DateTime.Now;
 
@@ -102,24 +105,22 @@ namespace GeoDataInsight.Client.Services
 
         public async Task ReordenarBancoAsync(List<LocationModel> listaParaReordenar)
         {
-            // 1. Ordena a lista atual pela data ou ID antigo para garantir a ordem correta
             var listaOrdenada = listaParaReordenar.OrderBy(x => x.Timestamp).ToList();
 
             for (int i = 0; i < listaOrdenada.Count; i++)
             {
-                int novoId = i + 1;
+                string novoId = (i + 1).ToString(); // Convertido para string
                 var item = listaOrdenada[i];
 
-                // Só atualiza no Firebase se o ID mudou
-                if (item.Id != novoId)
+                // Comparação de strings em vez de int
+                if (item.Id != novoId.ToString())
                 {
-                    item.Id = novoId;
+                    item.Id = novoId.ToString();
                     await _client.Child("HistoricoBuscas").Child(item.Key).PatchAsync(item);
                 }
             }
 
-            // 2. Reseta o contador global para o valor da nova contagem
-            await _client.Child("Configuracoes").Child("UltimoId").PutAsync(listaOrdenada.Count);
+            await _client.Child("Configuracoes").Child("UltimoId").PutAsync(listaParaReordenar.Count);
         }
 
 

@@ -1,18 +1,17 @@
 ﻿<Window x:Class="GeoDataInsight.Client.Views.AdminWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="GeoData Insight - Admin" Height="700" Width="1000"
+        Title="GeoData Insight - Admin Console" Height="750" Width="1200"
         WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable, Segoe UI" Background="#F8FAFC">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-        <Style x:Key="FilterCard" TargetType="Border">
+        <Style x:Key="ModernCard" TargetType="Border">
             <Setter Property="Background" Value="White"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="16"/>
-            <Setter Property="Margin" Value="0,0,0,20"/>
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.05"/>
@@ -20,22 +19,11 @@
             </Setter>
         </Style>
 
-        <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="RowHeight" Value="45"/>
-            <Setter Property="GridLinesVisibility" Value="None"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#E2E8F0"/>
-            <Setter Property="HeadersVisibility" Value="Column"/>
-        </Style>
-
-        <Style TargetType="DataGridColumnHeader">
+        <Style x:Key="FormInput" TargetType="TextBox">
+            <Setter Property="Padding" Value="8,10"/>
             <Setter Property="Background" Value="#F1F5F9"/>
-            <Setter Property="Foreground" Value="#64748B"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="10,8"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
         </Style>
     </Window.Resources>
 
@@ -49,14 +37,14 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,25">
             <TextBlock Text="Sistema de Gestão de Dados" FontSize="28" FontWeight="Bold" Foreground="#1E293B"/>
-            <TextBlock Text="Gerenciamento avançado de histórico e exclusão em lote" FontSize="14" Foreground="#94A3B8"/>
+            <TextBlock Text="Selecione um registro na lista para visualizar ou editar os detalhes" FontSize="14" Foreground="#94A3B8"/>
         </StackPanel>
 
-        <Border Grid.Row="1" Style="{StaticResource FilterCard}">
+        <Border Grid.Row="1" Style="{StaticResource ModernCard}" Margin="0,0,0,20">
             <StackPanel Orientation="Horizontal">
                 <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
-                    <TextBlock Text="Status dos Filtros" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,4"/>
-                    <CheckBox Content="Ativar Filtros" IsChecked="{Binding FiltrosAtivos}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Status" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,4"/>
+                    <CheckBox Content="Filtros Ativos" IsChecked="{Binding FiltrosAtivos}" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Margin="0,0,15,0">
@@ -69,67 +57,97 @@
                     <TextBox Width="120" Text="{Binding FiltroCep, UpdateSourceTrigger=PropertyChanged}" Padding="8,5" Background="#F1F5F9" BorderThickness="0"/>
                 </StackPanel>
 
-                <StackPanel Margin="0,0,15,0">
-                    <TextBlock Text="Data da Busca" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,4"/>
-                    <DatePicker SelectedDate="{Binding FiltroData}" Width="150" Padding="5"/>
-                </StackPanel>
-
                 <Button Command="{Binding LimparFiltrosCommand}" Content="Limpar Filtros" 
                         Background="Transparent" BorderBrush="#CBD5E1" Foreground="#64748B"
-                        Padding="15,0" Margin="10,15,0,0" Height="35"/>
+                        Padding="15,0" Margin="10,15,0,0" Height="35" Cursor="Hand"/>
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="10">
-            <Grid>
-                <DataGrid ItemsSource="{Binding TodosRegistros}" AutoGenerateColumns="False" CanUserAddRows="False">
-                    <DataGrid.Columns>
-                        <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40">
-                            <DataGridCheckBoxColumn.ElementStyle>
-                                <Style TargetType="CheckBox">
-                                    <Setter Property="HorizontalAlignment" Value="Center"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                </Style>
-                            </DataGridCheckBoxColumn.ElementStyle>
-                        </DataGridCheckBoxColumn>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="320"/>
+            </Grid.ColumnDefinitions>
 
-                        <DataGridTextColumn Header="ID" Binding="{Binding DisplayId}" Width="60" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="110" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*" IsReadOnly="True"/>
+            <Border Grid.Column="0" Background="White" CornerRadius="12" Padding="10" Margin="0,0,20,0">
+                <Grid>
+                    <DataGrid ItemsSource="{Binding TodosRegistros}" 
+                              SelectedItem="{Binding SelectedLocation, Mode=TwoWay}"
+                              AutoGenerateColumns="False" CanUserAddRows="False"
+                              IsReadOnly="True" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
+                            <DataGridTextColumn Header="ID" Binding="{Binding DisplayId}" Width="60"/>
+                            <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="100"/>
+                            <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
 
-                        <DataGridTemplateColumn Header="DATA E HORA" Width="180">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Timestamp, StringFormat='dd MMM yyyy - HH:mm'}" 
-                                               VerticalAlignment="Center" Foreground="#475569"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                Visibility="{Binding MostrarAvisoVazio, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="🔍 Nenhum registro encontrado" FontSize="16" Foreground="#94A3B8"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
-                            Visibility="{Binding MostrarAvisoVazio, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                    <TextBlock Text="Nenhum registro encontrado" FontSize="20" FontWeight="Bold" Foreground="#1E293B" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Tente mudar os filtros ou verifique se o banco possui dados." FontSize="14" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                </StackPanel>
-            </Grid>
-        </Border>
+            <Border Grid.Column="1" Style="{StaticResource ModernCard}" BorderBrush="#E2E8F0" BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="DETALHES DO REGISTRO" FontSize="12" FontWeight="Black" Foreground="#0284C7" Margin="0,0,0,20"/>
+
+                        <TextBlock Text="ID" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                        <TextBox Text="{Binding SelectedLocation.DisplayId}" Style="{StaticResource FormInput}" IsReadOnly="True"/>
+
+                        <TextBlock Text="Logradouro" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                        <TextBox Text="{Binding SelectedLocation.Logradouro, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FormInput}"/>
+
+                        <TextBlock Text="Número" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                        <TextBox Text="{Binding SelectedLocation.Numero, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FormInput}"/>
+
+                        <TextBlock Text="Bairro" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                        <TextBox Text="{Binding SelectedLocation.Bairro, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FormInput}"/>
+
+                        <TextBlock Text="CEP" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
+                        <TextBox Text="{Binding SelectedLocation.Cep, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FormInput}"/>
+
+                        <Separator Margin="0,10" Background="#F1F5F9"/>
+
+                        <TextBlock Text="Coordenadas" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,8"/>
+                        <UniformGrid Columns="2">
+                            <TextBox Text="{Binding SelectedLocation.Latitude}" Margin="0,0,5,0" Style="{StaticResource FormInput}" IsReadOnly="True" FontSize="10"/>
+                            <TextBox Text="{Binding SelectedLocation.Longitude}" Margin="5,0,0,0" Style="{StaticResource FormInput}" IsReadOnly="True" FontSize="10"/>
+                        </UniformGrid>
+
+                        <Button Content="Limpar Seleção" Command="{Binding LimparSelecaoCommand}" 
+                                Margin="0,10,0,0" Background="#F1F5F9" BorderThickness="0" Padding="10"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
 
         <Grid Grid.Row="3" Margin="0,20,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button Command="{Binding SelecionarTodosCommand}" Content="Selecionar Todos" 
-                        Background="#E2E8F0" Foreground="#475569" Padding="15,8" BorderThickness="0" Margin="0,0,10,0"/>
+                        Background="#E2E8F0" Foreground="#475569" Padding="15,8" 
+                        BorderThickness="0" Margin="0,0,10,0" Cursor="Hand"/>
+
                 <Button Command="{Binding CarregarDadosCommand}" Content="🔄 Atualizar Banco" 
-                        Background="#E2E8F0" Foreground="#475569" Padding="15,8" BorderThickness="0"/>
+                        Background="#E2E8F0" Foreground="#475569" Padding="15,8" 
+                        BorderThickness="0" Margin="0,0,10,0" Cursor="Hand"/>
+
+                <Button Command="{Binding SincronizarComSquad2Command}" 
+                        Background="#0284C7" Foreground="White" Padding="20,8" 
+                        BorderThickness="0" FontWeight="SemiBold" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="☁️ Sincronizar Squad 2" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <Button Command="{Binding DeletarSelecionadosCommand}" HorizontalAlignment="Right" 
-                    Background="#EF4444" Foreground="White" Padding="25,10" FontWeight="Bold" BorderThickness="0">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="🗑️ EXCLUIR REGISTROS SELECIONADOS" VerticalAlignment="Center"/>
-                </StackPanel>
+                    Background="#EF4444" Foreground="White" Padding="25,10" 
+                    FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                <TextBlock Text="🗑️ EXCLUIR SELECIONADOS"/>
             </Button>
         </Grid>
     </Grid>
