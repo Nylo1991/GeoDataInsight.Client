@@ -11,18 +11,15 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using GeoDataInsight.Client.DTO;
-
 
 namespace GeoDataInsight.Client.ViewModels
 {
     public class AdminViewModel : INotifyPropertyChanged
     {
         private readonly FirebaseService _firebaseService;
+        private readonly Squad2IntegrationService _squad2Service;
         private List<LocationModel> _listaOriginal;
         private ObservableCollection<LocationModel> _todosRegistros;
-
-        // Propriedades de Filtro
 
         private string _filtroCep;
         private string _filtroId;
@@ -30,11 +27,7 @@ namespace GeoDataInsight.Client.ViewModels
         private bool _filtrosAtivos;
         private bool _todosSelecionados;
         private bool _mostrarAvisoVazio;
-        private readonly Squad2IntegrationService _squad2Service;
         private LocationModel _selectedLocation;
-
-       
-
 
         public ObservableCollection<LocationModel> TodosRegistros
         {
@@ -42,16 +35,10 @@ namespace GeoDataInsight.Client.ViewModels
             set { _todosRegistros = value; OnPropertyChanged(); }
         }
 
-
         public LocationModel SelectedLocation
         {
             get => _selectedLocation;
-            set
-            {
-                _selectedLocation = value;
-                OnPropertyChanged();
-                // Isso fará a UI reagir instantaneamente
-            }
+            set { _selectedLocation = value; OnPropertyChanged(); }
         }
 
         public bool MostrarAvisoVazio
@@ -90,23 +77,22 @@ namespace GeoDataInsight.Client.ViewModels
         public ICommand SelecionarTodosCommand { get; }
         public ICommand LimparFiltrosCommand { get; }
         public ICommand SincronizarComSquad2Command { get; }
+        public ICommand LimparSelecaoCommand { get; }
 
         public AdminViewModel()
         {
             _firebaseService = new FirebaseService();
+            _squad2Service = new Squad2IntegrationService();
             TodosRegistros = new ObservableCollection<LocationModel>();
             _listaOriginal = new List<LocationModel>();
-            _firebaseService = new FirebaseService();
-            _squad2Service = new Squad2IntegrationService();
 
-            // Inicialização dos Comandos
+            // Inicialização dos Comandos (Corrigido parênteses e vírgulas)
             DeletarSelecionadosCommand = new RelayCommand(async (obj) => await ExecutarDeletarLote());
             CarregarDadosCommand = new RelayCommand(async (obj) => await CarregarDados());
             SelecionarTodosCommand = new RelayCommand((obj) => AlternarSelecaoTodos());
             LimparFiltrosCommand = new RelayCommand((obj) => ResetarFiltros());
-            SincronizarComSquad2Command = new RelayCommand(async (obj) => await ExecutarSincronizacaoSquad2()
-
-            );
+            SincronizarComSquad2Command = new RelayCommand(async (obj) => await ExecutarSincronizacaoSquad2());
+            LimparSelecaoCommand = new RelayCommand((obj) => SelectedLocation = null);
 
             _ = CarregarDados();
         }
@@ -116,12 +102,9 @@ namespace GeoDataInsight.Client.ViewModels
             try
             {
                 var dados = await _firebaseService.GetTodosRegistrosAsync();
-
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     _listaOriginal = dados ?? new List<LocationModel>();
-
-                    // A mágica da numeração vai acontecer aqui dentro!
                     AplicarFiltro();
                 });
             }
@@ -133,24 +116,20 @@ namespace GeoDataInsight.Client.ViewModels
 
         private void AplicarFiltro()
         {
-            // 1. Sua lógica atual de filtragem continua igual
-            // (Pode ser que você use LINQ aqui com o _listaOriginal)
             IEnumerable<LocationModel> resultadoFiltro = _listaOriginal;
 
             if (FiltrosAtivos)
             {
-                // Exemplo de como seus filtros provavelmente estão
                 if (!string.IsNullOrWhiteSpace(FiltroCep))
-                    resultadoFiltro = resultadoFiltro.Where(r => r.Cep.Contains(FiltroCep));
+                    resultadoFiltro = resultadoFiltro.Where(r => r.Cep != null && r.Cep.Contains(FiltroCep));
 
-                // ... outros filtros
+                if (!string.IsNullOrWhiteSpace(FiltroId))
+                    resultadoFiltro = resultadoFiltro.Where(r => r.Id != null && r.Id.ToString().Contains(FiltroId));
             }
 
             var listaFinal = resultadoFiltro.ToList();
 
-            // ---------------------------------------------------------
-            // 2. NOVA LÓGICA: APLICAR NUMERAÇÃO SEQUENCIAL (DisplayId)
-            // ---------------------------------------------------------
+            // Numeração Sequencial
             int contador = 1;
             foreach (var item in listaFinal)
             {
@@ -158,11 +137,63 @@ namespace GeoDataInsight.Client.ViewModels
                 contador++;
             }
 
-            // 3. Atualiza a tela com a lista já numerada corretamente
             TodosRegistros = new ObservableCollection<LocationModel>(listaFinal);
-
-            // Atualiza a visibilidade da mensagem de "Nenhum registro encontrado"
             MostrarAvisoVazio = !TodosRegistros.Any();
+        }
+
+        private async Task ExecutarSincronizacaoSquad2()
+        {
+            var selecionados = TodosRegistros.Where(x => x.IsSelected).ToList();
+            if (!selecionados.Any()) return;
+
+            int sucessos = 0;
+            int falhas = 0;
+
+            foreach (var local in selecionados)
+            {
+                // 1. Tenta extrair apenas números do CEP original
+                string cepFinal = new string(local.Cep?.Where(char.IsDigit).ToArray() ?? Array.Empty<char>());
+
+                // 2. LÓGICA DE MASCARAMENTO:
+                // Se não tem 8 dígitos, vamos "mascarar" para a API aceitar
+                if (cepFinal.Length != 8)
+                {
+                    // Criamos um CEP fictício de 8 dígitos: 
+                    // Os 3 primeiros dígitos identificam que é internacional (ex: 999)
+                    // Os outros 5 tentamos manter do código original ou preenchemos com 0
+                    string prefixoInternacional = "999";
+                    string sufixoLimpo = cepFinal.Length > 5 ? cepFinal.Substring(0, 5) : cepFinal.PadLeft(5, '0');
+
+                    cepFinal = prefixoInternacional + sufixoLimpo;
+
+                    // Opcional: Adicionar no Logradouro que era um dado internacional original
+                    // local.Logradouro = "[INTL] " + local.Logradouro;
+                }
+
+                var request = new MapasApiRequest
+                {
+                    Id = local.Id,
+                    Logradouro = local.Logradouro,
+                    Numero = local.Numero,
+                    Bairro = local.Bairro,
+                    Cep = cepFinal, // Agora sempre terá 8 dígitos
+                    Latitude = local.Latitude,
+                    Longitude = local.Longitude,
+                    Timestamp = local.Timestamp.ToUniversalTime()
+                };
+
+                // Certifique-se de que _squad2Service foi instanciado no construtor!
+                if (_squad2Service == null)
+                {
+                    MessageBox.Show("Erro: Serviço Squad 2 não inicializado.");
+                    return;
+                }
+
+                bool ok = await _squad2Service.EnviarLocalizacaoAsync(request);
+                if (ok) sucessos++; else falhas++;
+            }
+
+            MessageBox.Show($"Sincronização concluída!\nSucessos: {sucessos}\nFalhas: {falhas}", "Resultado Squad 2");
         }
 
         private async Task ExecutarDeletarLote()
@@ -181,60 +212,15 @@ namespace GeoDataInsight.Client.ViewModels
                         await _firebaseService.DeletarDoHistoricoAsync(item.Key);
                         _listaOriginal.Remove(item);
                     }
-
-                    // Recalcula a lista e a numeração após deletar
                     AplicarFiltro();
-
-                    MessageBox.Show("Registros removidos!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Registros removidos!", "Sucesso");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Erro: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Erro: {ex.Message}", "Erro");
                 }
             }
         }
-
-
-        private async Task ExecutarSincronizacaoSquad2()
-        {
-            // Filtra os itens selecionados no DataGrid
-            var selecionados = TodosRegistros.Where(x => x.IsSelected).ToList();
-
-            if (!selecionados.Any())
-            {
-                MessageBox.Show("Selecione ao menos um registro.");
-                return;
-            }
-
-            var service = new Squad2IntegrationService();
-            int sucessos = 0;
-            int falhas = 0;
-
-            foreach (var local in selecionados)
-            {
-                var request = new MapasApiRequest
-                {
-                    Id = local.Id,
-                    Logradouro = local.Logradouro,
-                    Numero = local.Numero,
-                    Bairro = local.Bairro,
-                    Cep = local.Cep,
-                    Latitude = local.Latitude,
-                    Longitude = local.Longitude,
-                    // Garante que o servidor aceite a data
-                    Timestamp = local.Timestamp.ToUniversalTime()
-                };
-
-                // Se o passo 1 acima foi feito, _squad2Service não será mais null
-                bool ok = await _squad2Service.EnviarLocalizacaoAsync(request);
-
-                if (ok) sucessos++;
-                else falhas++;
-            }
-
-            MessageBox.Show($"Sincronização concluída!\nSucessos: {sucessos}\nFalhas: {falhas}", "Resultado Squad 2");
-        }
-
 
         private void AlternarSelecaoTodos()
         {
@@ -244,51 +230,14 @@ namespace GeoDataInsight.Client.ViewModels
 
         private void ResetarFiltros()
         {
-            _filtroCep = string.Empty;
-            _filtroId = string.Empty;
-            _filtroData = null;
-
-            // Notifica a UI que as propriedades mudaram
-            OnPropertyChanged(nameof(FiltroCep));
-            OnPropertyChanged(nameof(FiltroId));
-            OnPropertyChanged(nameof(FiltroData));
-
+            FiltroCep = string.Empty;
+            FiltroId = string.Empty;
+            FiltroData = null;
             AplicarFiltro();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-        public async Task SincronizarDadosComSquad2()
-        {
-            var service = new Squad2IntegrationService();
-
-            // Supondo que 'MeusDadosLocais' venha do seu banco de dados local
-            var meusDadosLocais = _listaOriginal;
-
-            foreach (var local in meusDadosLocais)
-            {
-                var request = new MapasApiRequest
-                {
-                    Logradouro = local.Logradouro, // 'L' maiúsculo
-                    Numero = local.Numero,         // 'N' maiúsculo
-                    Bairro = local.Bairro,         // 'B' maiúsculo
-                    Cep = local.Cep,               // 'C' maiúsculo
-                    Latitude = local.Latitude,     // 'L' maiúsculo
-                    Longitude = local.Longitude    // 'L' maiúsculo
-                };
-
-                bool ok = await service.EnviarLocalizacaoAsync(request);
-
-                if (ok)
-                {
-                    // Atualize seu banco local marcando que este registro já foi enviado
-                }
-            }
-
-
-
-        }
     }
 }

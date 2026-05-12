@@ -73,13 +73,16 @@
                 <Grid>
                     <DataGrid ItemsSource="{Binding TodosRegistros}" 
                               SelectedItem="{Binding SelectedLocation, Mode=TwoWay}"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              IsReadOnly="True" SelectionMode="Single">
+                              AutoGenerateColumns="False" 
+                              CanUserAddRows="False"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow"
+                              IsReadOnly="False">
                         <DataGrid.Columns>
                             <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
-                            <DataGridTextColumn Header="ID" Binding="{Binding DisplayId}" Width="60"/>
-                            <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="100"/>
-                            <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*"/>
+                            <DataGridTextColumn Header="ID" Binding="{Binding DisplayId}" Width="60" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="100" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*" IsReadOnly="True"/>
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -119,7 +122,7 @@
                         </UniformGrid>
 
                         <Button Content="Limpar Seleção" Command="{Binding LimparSelecaoCommand}" 
-                                Margin="0,10,0,0" Background="#F1F5F9" BorderThickness="0" Padding="10"/>
+                                Margin="0,10,0,0" Background="#F1F5F9" BorderThickness="0" Padding="10" Cursor="Hand"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

@@ -9,6 +9,7 @@ namespace GeoDataInsight.Client.Models
     [FirestoreData]
     public class LocationModel : INotifyPropertyChanged
     {
+
         [FirestoreProperty] public string Id { get; set; } = string.Empty;
         [FirestoreProperty] public string Logradouro { get; set; } = string.Empty;
         [FirestoreProperty] public string Numero { get; set; } = string.Empty;
