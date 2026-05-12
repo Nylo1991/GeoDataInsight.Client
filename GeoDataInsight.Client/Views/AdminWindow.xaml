@@ -93,7 +93,7 @@
                             </DataGridCheckBoxColumn.ElementStyle>
                         </DataGridCheckBoxColumn>
 
-                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding DisplayId}" Width="60" IsReadOnly="True"/>
                         <DataGridTextColumn Header="CEP" Binding="{Binding Cep}" Width="110" IsReadOnly="True"/>
                         <DataGridTextColumn Header="LOGRADOURO" Binding="{Binding Logradouro}" Width="*" IsReadOnly="True"/>
 

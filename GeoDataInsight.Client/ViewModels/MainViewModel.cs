@@ -160,13 +160,23 @@ namespace GeoDataInsight.Client.ViewModels
             {
                 try
                 {
+                    // 1. GARANTIR DATA E HORA ATUAL
+                    // Isso corrige o problema da data "0001" que aparecia na sua tabela
+                    local.Timestamp = DateTime.Now;
+
+                    // 2. SALVAR NO FIREBASE
+                    // O FirebaseService (com a alteração que sugerimos antes) 
+                    // vai buscar o GetProximoIdAsync() internamente dentro deste método.
                     string chaveDoFirebase = await _firebaseService.SalvarNoHistoricoAsync(local);
+
+                    // 3. ATUALIZAR A CHAVE LOCAL
                     local.Key = chaveDoFirebase;
 
+                    // Atualiza o histórico local e a UI
                     _historyService.AddToHistory(local);
                     CarregarHistorico();
 
-                    MessageBox.Show($"Salvo com sucesso! Chave: {chaveDoFirebase}", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"Salvo com sucesso!\nID Gerado: {local.Id}", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {

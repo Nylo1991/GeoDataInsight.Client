@@ -41,19 +41,28 @@ namespace GeoDataInsight.Client.Services
             try
             {
                 var registros = await _client.Child("HistoricoBuscas").OnceAsync<LocationModel>();
+
+                if (registros == null) return new List<LocationModel>();
+
                 return registros.Select(item =>
                 {
                     var model = item.Object;
-                    model.Key = item.Key; // Importante para deletar depois
+                    model.Key = item.Key;
                     return model;
                 }).ToList();
             }
             catch { return new List<LocationModel>(); }
         }
 
-        // SALVAR
         public async Task<string> SalvarNoHistoricoAsync(LocationModel local)
         {
+            // Garante que o ID seja gerado
+            local.Id = await GetProximoIdAsync();
+
+            // Boa prática: Garante que o registro tenha data/hora se não foi definida
+            if (local.Timestamp == default)
+                local.Timestamp = DateTime.Now;
+
             var resultado = await _client.Child("HistoricoBuscas").PostAsync(local);
             return resultado.Key;
         }
@@ -71,5 +80,48 @@ namespace GeoDataInsight.Client.Services
             var tarefas = keys.Select(key => DeletarDoHistoricoAsync(key));
             await Task.WhenAll(tarefas);
         }
+
+        public async Task<int> GetProximoIdAsync()
+        {
+            try
+            {
+                // Busca o valor atual do contador
+                var snapshot = await _client.Child("Configuracoes").Child("UltimoId").OnceSingleAsync<int?>();
+                int novoId = (snapshot ?? 0) + 1;
+
+                // Atualiza o contador no Firebase para o próximo registro
+                await _client.Child("Configuracoes").Child("UltimoId").PutAsync(novoId);
+
+                return novoId;
+            }
+            catch
+            {
+                return 1; // Fallback caso o nó não exista
+            }
+        }
+
+        public async Task ReordenarBancoAsync(List<LocationModel> listaParaReordenar)
+        {
+            // 1. Ordena a lista atual pela data ou ID antigo para garantir a ordem correta
+            var listaOrdenada = listaParaReordenar.OrderBy(x => x.Timestamp).ToList();
+
+            for (int i = 0; i < listaOrdenada.Count; i++)
+            {
+                int novoId = i + 1;
+                var item = listaOrdenada[i];
+
+                // Só atualiza no Firebase se o ID mudou
+                if (item.Id != novoId)
+                {
+                    item.Id = novoId;
+                    await _client.Child("HistoricoBuscas").Child(item.Key).PatchAsync(item);
+                }
+            }
+
+            // 2. Reseta o contador global para o valor da nova contagem
+            await _client.Child("Configuracoes").Child("UltimoId").PutAsync(listaOrdenada.Count);
+        }
+
+
     }
 }

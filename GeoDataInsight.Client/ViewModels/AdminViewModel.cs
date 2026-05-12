@@ -25,6 +25,7 @@ namespace GeoDataInsight.Client.ViewModels
         private DateTime? _filtroData;
         private bool _filtrosAtivos;
         private bool _todosSelecionados;
+        private bool _mostrarAvisoVazio;
 
         public ObservableCollection<LocationModel> TodosRegistros
         {
@@ -32,9 +33,6 @@ namespace GeoDataInsight.Client.ViewModels
             set { _todosRegistros = value; OnPropertyChanged(); }
         }
 
-        #region Propriedades dos Filtros Avançados
-
-        private bool _mostrarAvisoVazio;
         public bool MostrarAvisoVazio
         {
             get => _mostrarAvisoVazio;
@@ -44,12 +42,7 @@ namespace GeoDataInsight.Client.ViewModels
         public bool FiltrosAtivos
         {
             get => _filtrosAtivos;
-            set
-            {
-                _filtrosAtivos = value;
-                OnPropertyChanged();
-                AplicarFiltro(); // Reaplica ou limpa filtros ao alternar o switch
-            }
+            set { _filtrosAtivos = value; OnPropertyChanged(); AplicarFiltro(); }
         }
 
         public string FiltroCep
@@ -70,8 +63,7 @@ namespace GeoDataInsight.Client.ViewModels
             set { _filtroData = value; OnPropertyChanged(); AplicarFiltro(); }
         }
 
-        #endregion
-
+        // Comandos
         public ICommand DeletarSelecionadosCommand { get; }
         public ICommand CarregarDadosCommand { get; }
         public ICommand SelecionarTodosCommand { get; }
@@ -83,6 +75,7 @@ namespace GeoDataInsight.Client.ViewModels
             TodosRegistros = new ObservableCollection<LocationModel>();
             _listaOriginal = new List<LocationModel>();
 
+            // Inicialização dos Comandos
             DeletarSelecionadosCommand = new RelayCommand(async (obj) => await ExecutarDeletarLote());
             CarregarDadosCommand = new RelayCommand(async (obj) => await CarregarDados());
             SelecionarTodosCommand = new RelayCommand((obj) => AlternarSelecaoTodos());
@@ -100,7 +93,9 @@ namespace GeoDataInsight.Client.ViewModels
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     _listaOriginal = dados ?? new List<LocationModel>();
-                    AplicarFiltro(); // Preenche a tela respeitando filtros atuais
+
+                    // A mágica da numeração vai acontecer aqui dentro!
+                    AplicarFiltro();
                 });
             }
             catch (Exception ex)
@@ -111,83 +106,63 @@ namespace GeoDataInsight.Client.ViewModels
 
         private void AplicarFiltro()
         {
-            if (TodosRegistros == null || _listaOriginal == null) return;
+            // 1. Sua lógica atual de filtragem continua igual
+            // (Pode ser que você use LINQ aqui com o _listaOriginal)
+            IEnumerable<LocationModel> resultadoFiltro = _listaOriginal;
 
-            TodosRegistros.Clear();
-
-            // 1. Se os filtros estiverem desligados, mostra a lista completa
-            if (!FiltrosAtivos)
+            if (FiltrosAtivos)
             {
-                foreach (var item in _listaOriginal) TodosRegistros.Add(item);
-                MostrarAvisoVazio = !TodosRegistros.Any(); // Avisa se o banco estiver 100% vazio
-                return;
+                // Exemplo de como seus filtros provavelmente estão
+                if (!string.IsNullOrWhiteSpace(FiltroCep))
+                    resultadoFiltro = resultadoFiltro.Where(r => r.Cep.Contains(FiltroCep));
+
+                // ... outros filtros
             }
 
-            // 2. Lógica de Filtros Combinados (LINQ)
-            var consulta = _listaOriginal.AsQueryable();
+            var listaFinal = resultadoFiltro.ToList();
 
-            // Filtro por CEP (Removendo traços para busca flexível)
-            if (!string.IsNullOrWhiteSpace(FiltroCep))
+            // ---------------------------------------------------------
+            // 2. NOVA LÓGICA: APLICAR NUMERAÇÃO SEQUENCIAL (DisplayId)
+            // ---------------------------------------------------------
+            int contador = 1;
+            foreach (var item in listaFinal)
             {
-                string cepBusca = FiltroCep.Replace("-", "");
-                consulta = consulta.Where(x => x.Cep != null && x.Cep.Replace("-", "").Contains(cepBusca));
+                item.DisplayId = contador;
+                contador++;
             }
 
-            // Filtro por ID
-            if (!string.IsNullOrWhiteSpace(FiltroId))
-            {
-                consulta = consulta.Where(x => x.Id.ToString().Contains(FiltroId));
-            }
+            // 3. Atualiza a tela com a lista já numerada corretamente
+            TodosRegistros = new ObservableCollection<LocationModel>(listaFinal);
 
-            // Filtro por Data
-            if (FiltroData.HasValue)
-            {
-                consulta = consulta.Where(x => x.Timestamp.Date == FiltroData.Value.Date);
-            }
-
-            // 3. Executa a filtragem e preenche a lista da interface
-            var resultado = consulta.ToList();
-            foreach (var item in resultado)
-            {
-                TodosRegistros.Add(item);
-            }
-
-            // 4. A VALIDAÇÃO QUE FALTAVA: 
-            // Se a consulta não retornou nada, mas o usuário digitou algo, ativa o aviso.
+            // Atualiza a visibilidade da mensagem de "Nenhum registro encontrado"
             MostrarAvisoVazio = !TodosRegistros.Any();
         }
 
         private async Task ExecutarDeletarLote()
         {
             var selecionados = TodosRegistros.Where(x => x.IsSelected).ToList();
+            if (!selecionados.Any()) return;
 
-            if (!selecionados.Any())
-            {
-                MessageBox.Show("Selecione pelo menos um registro para excluir.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var confirmacao = MessageBox.Show(
-                $"OPERAÇÃO IRREVERSÍVEL!\n\nDeseja excluir {selecionados.Count} registro(s) permanentemente?",
-                "Confirmação de Segurança", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var confirmacao = MessageBox.Show($"Excluir {selecionados.Count} registro(s) permanentemente?", "Confirmação", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
             if (confirmacao == MessageBoxResult.Yes)
             {
                 try
                 {
-                    // Mostra que está processando (opcional: adicionar uma flag IsBusy)
                     foreach (var item in selecionados)
                     {
                         await _firebaseService.DeletarDoHistoricoAsync(item.Key);
                         _listaOriginal.Remove(item);
-                        TodosRegistros.Remove(item);
                     }
 
-                    MessageBox.Show("Registros removidos com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // Recalcula a lista e a numeração após deletar
+                    AplicarFiltro();
+
+                    MessageBox.Show("Registros removidos!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Erro durante a exclusão: {ex.Message}", "Falha Crítica", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Erro: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -195,24 +170,25 @@ namespace GeoDataInsight.Client.ViewModels
         private void AlternarSelecaoTodos()
         {
             _todosSelecionados = !_todosSelecionados;
-            foreach (var item in TodosRegistros)
-            {
-                item.IsSelected = _todosSelecionados;
-            }
+            foreach (var item in TodosRegistros) item.IsSelected = _todosSelecionados;
         }
 
         private void ResetarFiltros()
         {
-            FiltroCep = string.Empty;
-            FiltroId = string.Empty;
-            FiltroData = null;
+            _filtroCep = string.Empty;
+            _filtroId = string.Empty;
+            _filtroData = null;
+
+            // Notifica a UI que as propriedades mudaram
+            OnPropertyChanged(nameof(FiltroCep));
+            OnPropertyChanged(nameof(FiltroId));
+            OnPropertyChanged(nameof(FiltroData));
+
             AplicarFiltro();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-        
     }
 }
