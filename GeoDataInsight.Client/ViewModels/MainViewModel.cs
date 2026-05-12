@@ -269,6 +269,6 @@ namespace GeoDataInsight.Client.ViewModels
                 ApiStatusText = "API Offline";
                 ApiStatusColor = "#EF4444"; // Vermelho
             }
-        }
+        }   
     }
 }
